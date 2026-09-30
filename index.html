@@ -23,16 +23,18 @@
   --ink-2:#6a6b66;      /* secondary ink */
   --rule:#dcdcd6;       /* hairlines */
   --red:#b3121c;        /* card red: dealer, errors */
-  --lead:#17784a;       /* card-table green: whoever leads */
+  --lead:#9a7208;       /* gold text for the leader */
+  --up:#17784a;         /* climbed places */
+  --gold:#d9b23c; --silver:#b8c0c8; --bronze:#c7834f;  /* medal fills, readable on both themes */
   --wash:#ecece7;       /* pressed / subtle fill */
   --display:"Funnel Display","Schibsted Grotesk",system-ui,-apple-system,sans-serif;
   --ui:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --paper:#0f1116; --stock:#171a21; --ink:#ecebe6; --ink-2:#9b9ca3; --rule:#2b2f38; --red:#f0565c; --lead:#4fc98a; --wash:#1f232c; color-scheme:dark}}
+  --paper:#0f1116; --stock:#171a21; --ink:#ecebe6; --ink-2:#9b9ca3; --rule:#2b2f38; --red:#f0565c; --lead:#e6bb45; --up:#4fc98a; --wash:#1f232c; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --paper:#0f1116; --stock:#171a21; --ink:#ecebe6; --ink-2:#9b9ca3; --rule:#2b2f38; --red:#f0565c; --lead:#4fc98a; --wash:#1f232c; color-scheme:dark}
+  --paper:#0f1116; --stock:#171a21; --ink:#ecebe6; --ink-2:#9b9ca3; --rule:#2b2f38; --red:#f0565c; --lead:#e6bb45; --up:#4fc98a; --wash:#1f232c; color-scheme:dark}
 
 *{box-sizing:border-box}
 html{touch-action:manipulation;-webkit-tap-highlight-color:transparent;background:var(--paper);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -86,7 +88,12 @@ header h1{min-width:0}
 .idx .nm{font-size:.78rem;font-weight:500;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis}
 .idx .tot{font-family:var(--display);font-weight:700;letter-spacing:-.02em;font-size:2rem;line-height:1.05}
 .idx .gap{font-size:.72rem;color:var(--ink-2)}
-.idx.lead .tot,.idx.lead .nm{color:var(--lead)}
+.idx.lead .tot{color:var(--lead)}
+.idx .nm{display:flex;align-items:center;gap:5px}
+.medal{display:inline-grid;place-items:center;flex:0 0 auto;width:1.35em;height:1.35em;border-radius:50%;font-family:var(--display);font-weight:700;font-size:.8em;line-height:1;color:#141414;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.medal.m1{background:var(--gold)}.medal.m2{background:var(--silver)}.medal.m3{background:var(--bronze);color:#fff}
+.mv{font-weight:500;white-space:nowrap}
+.mv.up{color:var(--up)}.mv.dn{color:var(--red)}
 
 /* the round card */
 .round-top{display:flex;gap:20px;align-items:stretch}
@@ -173,12 +180,14 @@ tfoot td:first-child{font-family:var(--ui);font-size:.68rem;text-transform:upper
 .linkline code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;font-size:.8rem;color:var(--ink-2);border-bottom:1px solid var(--rule);padding:8px 0;user-select:all}
 .linkline .btn{width:auto;padding:10px 16px;font-size:.9rem}
 .ranks{display:flex;flex-direction:column;border-top:1px solid var(--ink)}
-.rank{display:grid;grid-template-columns:1.8rem 1fr auto;gap:12px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--rule)}
+.rank{display:grid;grid-template-columns:2rem 1fr auto;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid var(--rule)}
 .rank .r{font-family:var(--display);font-weight:600;color:var(--ink-2)}
 .rank .nm{min-width:0;font-size:1.15rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rank .nm .sub{display:block;font-size:.8rem;font-weight:400;color:var(--ink-2)}
 .rank .tt{font-family:var(--display);font-weight:700;letter-spacing:-.02em;font-size:2.4rem;line-height:1}
-.rank.first .r,.rank.first .tt{color:var(--lead)}
+.rank.first .tt{color:var(--lead)}
+.rank .medal{font-size:1.05rem}
+.rank .r{text-align:center}
 .bids{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.9rem}
 .bids span b{font-family:var(--display);font-weight:600;font-size:1.1rem;margin-left:4px}
 .winner{text-align:center;align-items:center;padding:12px 0 4px;gap:6px}
@@ -264,6 +273,14 @@ function course(ri){
   return `<div class="course" aria-hidden="true">${sch.map((c,i)=>`<span class="${i<ri?'done':i===ri?'now':''}" style="height:${Math.max(10,Math.round(c/m*100))}%"></span>`).join('')}</div>`;
 }
 function standingsOrder(){const t=totals();return {t,order:t.map((v,i)=>i).sort((a,b)=>t[b]-t[a])}}
+const ranksOf=t=>t.map(v=>1+t.filter(x=>x>v).length);   // ties share a place: 1, 1, 3
+function moves(){ // places gained (+) or lost (−) in the last round
+  if(S.rounds.length<2)return S.players.map(()=>0);
+  const prev=S.players.map(()=>0);S.rounds.slice(0,-1).forEach(r=>r.e.forEach((e,i)=>prev[i]+=e.p));
+  const a=ranksOf(prev),b=ranksOf(totals());return b.map((x,i)=>a[i]-x);
+}
+const medal=(rk,played)=>played&&rk<=3?`<span class="medal m${rk}" aria-label="Plass ${rk}">${rk}</span>`:`<span class="r">${rk}</span>`;
+const moveTag=m=>m>0?`<span class="mv up" aria-label="opp ${m}">↑${m>1?m:''}</span>`:m<0?`<span class="mv dn" aria-label="ned ${-m}">↓${m<-1?-m:''}</span>`:'';
 
 // ---- views ----
 function render(){
@@ -303,10 +320,10 @@ function setupView(){
 }
 
 function standingsView(){
-  const {t,order}=standingsOrder(),top=t[order[0]],played=S.rounds.length>0;
+  const {t,order}=standingsOrder(),top=t[order[0]],played=S.rounds.length>0,rk=ranksOf(t),mv=moves();
   return `<div class="standings"><div class="idxs" aria-label="Stilling">${order.map(i=>{
     const lead=played&&t[i]===top;
-    return `<div class="idx ${lead?'lead':''}"><span class="nm">${lead?'♦ ':''}${esc(S.players[i])}</span><span class="tot">${t[i]}</span><span class="gap">${!played?'&nbsp;':lead?'leder':signed(t[i]-top)}</span></div>`}).join('')}</div></div>`;
+    return `<div class="idx ${lead?'lead':''}"><span class="nm">${played&&rk[i]<=3?medal(rk[i],played):''}${esc(S.players[i])}</span><span class="tot">${t[i]}</span><span class="gap">${!played?'&nbsp;':(lead?'leder':signed(t[i]-top))} ${moveTag(mv[i])}</span></div>`}).join('')}</div></div>`;
 }
 
 function roundView(){
@@ -392,7 +409,7 @@ function boardView(){
       :SYNC==='wait'?'Henter stillingen …':'Ingen stilling ennå. Den dukker opp når spillet starter.';
     return head+`<p class="empty">${msg}</p>`;
   }
-  const {t,order}=standingsOrder(),top=t[order[0]],n=REMOTE.now,played=S.rounds.length>0;
+  const {t,order}=standingsOrder(),top=t[order[0]],n=REMOTE.now,played=S.rounds.length>0,rk=ranksOf(t),mv=moves();
   let now='';
   if(S.phase==='done')now=doneView();
   else if(S.phase==='play'&&n){
@@ -403,7 +420,7 @@ function boardView(){
   const list=`<section><div class="head"><h2>Stilling</h2><span class="sc">${S.rounds.length} ${S.rounds.length===1?'runde':'runder'}</span></div>
     <div class="ranks">${order.map((i,rank)=>{const lead=played&&t[i]===top;
       const last=played?S.rounds[S.rounds.length-1].e[i].p:null;
-      return `<div class="rank ${lead?'first':''}"><span class="r">${rank+1}</span><span class="nm">${esc(S.players[i])}<span class="sub">${!played?'&nbsp;':(lead?'leder':signed(t[i]-top)+' bak')+` · sist ${signed(last)}`}</span></span><span class="tt">${t[i]}</span></div>`}).join('')}</div></section>`;
+      return `<div class="rank ${lead?'first':''}">${medal(rk[i],played)}<span class="nm">${esc(S.players[i])} ${moveTag(mv[i])}<span class="sub">${!played?'&nbsp;':(lead?'leder':signed(t[i]-top)+' bak')+` · sist ${signed(last)}`}</span></span><span class="tt">${t[i]}</span></div>`}).join('')}</div></section>`;
   return head+now+list+logView();
 }
 // compact wire format keeps a 20-round game well under ntfy's 4 KB message limit
