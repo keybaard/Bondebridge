@@ -34,7 +34,7 @@
   --paper:#0f1116; --stock:#171a21; --ink:#ecebe6; --ink-2:#9b9ca3; --rule:#2b2f38; --red:#f0565c; --wash:#1f232c; color-scheme:dark}
 
 *{box-sizing:border-box}
-html{background:var(--paper);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{touch-action:manipulation;-webkit-tap-highlight-color:transparent;background:var(--paper);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:16px;line-height:1.45;
   padding:0 20px 56px;-webkit-text-size-adjust:100%;font-variant-numeric:lining-nums tabular-nums}
 [hidden]{display:none!important}
@@ -52,7 +52,8 @@ section{display:flex;flex-direction:column;gap:14px}
 .head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
 
 /* controls */
-button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.step,.step output{-webkit-user-select:none;user-select:none}
 button:disabled{cursor:not-allowed;opacity:.35}
 :focus-visible{outline:2px solid var(--red);outline-offset:3px}
 .btn{display:block;width:100%;padding:16px 20px;border-radius:8px;background:var(--ink);color:var(--paper);font-weight:500;font-size:1rem;letter-spacing:.01em;text-align:center}
