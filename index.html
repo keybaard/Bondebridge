@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Bondebridge">
+<meta name="apple-mobile-web-app-title" content="Poengblokka">
 <meta name="theme-color" content="#f4f4f1" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f1116" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='18' y='6' width='64' height='88' rx='9' fill='%23fff' stroke='%23141414' stroke-width='4'/%3E%3Ctext x='50' y='66' font-size='44' text-anchor='middle' fill='%23b3121c'%3E%E2%99%A6%3C/text%3E%3C/svg%3E">
-<title>Bondebridge</title>
+<title>Poengblokka</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300..800&family=Schibsted+Grotesk:wght@400;500;700&display=swap">
@@ -206,6 +206,23 @@ td.me{background:var(--wash);font-weight:600}
 tfoot td.me{background:var(--wash)}
 .bids span.me{font-weight:600}
 .bids span.me b{text-decoration:underline;text-underline-offset:4px}
+.games{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.games button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:14px;border-radius:10px;box-shadow:inset 0 0 0 1px var(--rule);text-align:left}
+.games button[aria-pressed="true"]{box-shadow:inset 0 0 0 1.5px var(--ink);background:var(--stock)}
+.games b{font-family:var(--display);font-size:1.15rem;font-weight:700;letter-spacing:-.01em}
+.games small{font-size:.78rem;color:var(--ink-2);line-height:1.3}
+.sdrow{align-items:start}
+.pcol{min-width:0;display:flex;flex-direction:column;gap:8px}
+.hcol{display:flex;flex-direction:column;align-items:center;gap:4px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:.82rem;font-weight:500;padding:6px 11px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--rule);color:var(--ink-2);min-height:32px}
+.chip.on{background:var(--ink);color:var(--paper);box-shadow:none}
+.chip.r.on{background:var(--red);color:#fff}
+.pass{font-size:.85rem;font-weight:500}
+.meter{height:6px;border-radius:3px;background:var(--rule);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--red)}
+.course.flat{height:10px}
+.course.flat span{height:100%}
 .comment{gap:8px;padding:0 0 16px;margin-top:-12px;border-bottom:1px solid var(--rule)}
 .comment .cl{color:var(--ink)}
 .comment p{font-family:var(--display);font-weight:400;font-size:1.2rem;line-height:1.3;letter-spacing:-.01em;text-wrap:pretty}
@@ -240,56 +257,285 @@ let ME=null;try{ME=localStorage.getItem(KEY+'-me')}catch(e){}
 const meIdx=()=>MODE==='board'&&ME!==null?S.players.indexOf(ME):-1;
 const save=()=>{if(MODE==='board')return;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 
-const DEMO={phase:'setup',players:['Ola','Kari','Per','Lise'],
+const SD_DEFAULT={hearts:'one',queen:13,jack:0,moon:'others',end:'limit',limit:100,rounds:10,pass:'none'};
+const DEMO={game:'bb',phase:'setup',players:['Ola','Kari','Per','Lise'],
   settings:{maxCards:10,order:'down',scoring:'ten',dealerBlock:false,zeroFive:false,firstDealer:0},
+  sd:Object.assign({},SD_DEFAULT),
   rounds:[],draft:null,editing:null,confirmNew:false};
 let S=load()||JSON.parse(JSON.stringify(DEMO));
-if(S.settings&&S.settings.zeroFive===undefined)S.settings.zeroFive=false;
-
-// ---- rules ----
-function schedule(){
-  const m=S.settings.maxCards,down=[],up=[];
-  for(let c=m;c>=1;c--)down.push(c);
-  for(let c=1;c<=m;c++)up.push(c);
-  return S.settings.order==='down'?down.concat(up):up.concat(down);
+function migrate(){
+  if(!S.game)S.game='bb';
+  if(!S.sd)S.sd=Object.assign({},SD_DEFAULT);
+  for(const k in SD_DEFAULT)if(S.sd[k]===undefined)S.sd[k]=SD_DEFAULT[k];
+  if(S.settings&&S.settings.zeroFive===undefined)S.settings.zeroFive=false;
 }
-function maxAllowed(n){return Math.max(1,Math.floor(52/Math.max(n,1)))}
-function score(bid,tricks,manual,cards){
-  const st=S.settings;
-  if(st.scoring==='manual')return manual||0;
-  if(bid===tricks){
-    if(st.zeroFive&&bid===0&&cards<=5)return 5;   // house rule: a made zero is only worth 5 once rounds are 5 cards or fewer
-    return 10+tricks;
-  }
-  if(st.scoring==='minus')return -Math.abs(bid-tricks);
-  return 0;
-}
-function totals(){const t=S.players.map(()=>0);S.rounds.forEach(r=>r.e.forEach((e,i)=>t[i]+=e.p));return t}
-function dealerFor(ri){return (S.settings.firstDealer+ri)%S.players.length}
-function newDraft(){
-  const cards=schedule()[S.rounds.length];
-  return {cards,stage:S.settings.scoring==='manual'?'tricks':'bids',e:S.players.map(()=>({b:0,t:0,m:0}))};
-}
+migrate();
 
 // ---- helpers ----
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const $=s=>document.querySelector(s);
 const SUITS=['♠','♥','♣','♦'];
+const WORDS=['null','én','to','tre','fire','fem'];
+const cap=w=>w.charAt(0).toUpperCase()+w.slice(1);
 const signed=p=>(p>0?'+':p<0?'−':'')+Math.abs(p);
 function stepper(id,val,min,max,label){
   return `<div class="step"><button type="button" data-step="${id}" data-d="-1" aria-label="Én mindre for ${label}" ${val<=min?'aria-disabled="true"':''}>−</button>
   <output aria-live="polite">${val}</output><button type="button" data-step="${id}" data-d="1" aria-label="Én mer for ${label}" ${val>=max?'aria-disabled="true"':''}>+</button></div>`;
 }
-function playCard(cards,ri){
-  const s=SUITS[ri%4],red=s==='♥'||s==='♦';
-  return `<div class="pcard ${red?'r':''}" aria-hidden="true"><span class="ix tl">${cards}<i>${s}</i></span><span class="pip">${s}</span><span class="ix br">${cards}<i>${s}</i></span></div>`;
+function cardFace(idx,suit){
+  const red=suit==='♥'||suit==='♦';
+  return `<div class="pcard ${red?'r':''}" aria-hidden="true"><span class="ix tl">${idx}<i>${suit}</i></span><span class="pip">${suit}</span><span class="ix br">${idx}<i>${suit}</i></span></div>`;
 }
-function course(ri){
-  const sch=schedule(),m=Math.max(...sch);
-  return `<div class="course" aria-hidden="true">${sch.map((c,i)=>`<span class="${i<ri?'done':i===ri?'now':''}" style="height:${Math.max(10,Math.round(c/m*100))}%"></span>`).join('')}</div>`;
-}
-function standingsOrder(){const t=totals();return {t,order:t.map((v,i)=>i).sort((a,b)=>t[b]-t[a])}}
-const ranksOf=t=>t.map(v=>1+t.filter(x=>x>v).length);   // ties share a place: 1, 1, 3
+function totals(){const t=S.players.map(()=>0);S.rounds.forEach(r=>r.e.forEach((e,i)=>t[i]+=e.p));return t}
+function dealerFor(ri){return (S.settings.firstDealer+ri)%S.players.length}
+
+/* ================================================================
+   GAMES. Everything that differs between card games lives here;
+   the rest of the app (standings, board, sync, pad) is shared.
+   ================================================================ */
+const GAMES={};
+
+// ---------- Bondebridge ----------
+GAMES.bb={
+  name:'Bondebridge',blurb:'Meld stikk, treff nøyaktig',low:false,minPlayers:2,
+  schedule(){
+    const m=S.settings.maxCards,down=[],up=[];
+    for(let c=m;c>=1;c--)down.push(c);
+    for(let c=1;c<=m;c++)up.push(c);
+    return S.settings.order==='down'?down.concat(up):up.concat(down);
+  },
+  totalRounds(){return this.schedule().length},
+  isOver(){return S.rounds.length>=this.totalRounds()},
+  maxAllowed(n){return Math.max(1,Math.floor(52/Math.max(n,1)))},
+  score(bid,tricks,manual,cards){
+    const st=S.settings;
+    if(st.scoring==='manual')return manual||0;
+    if(bid===tricks){
+      if(st.zeroFive&&bid===0&&cards<=5)return 5;   // house rule: a made zero is only worth 5 once rounds are 5 cards or fewer
+      return 10+tricks;
+    }
+    if(st.scoring==='minus')return -Math.abs(bid-tricks);
+    return 0;
+  },
+  newDraft(){
+    const cards=this.schedule()[S.rounds.length];
+    return {cards,stage:S.settings.scoring==='manual'?'tricks':'bids',e:S.players.map(()=>({b:0,t:0,m:0}))};
+  },
+  editDraft(r){return {cards:r.cards,stage:'tricks',e:r.e.map(e=>({b:e.b,t:e.t,m:e.p}))}},
+  finish(d){return {cards:d.cards,e:d.e.map(e=>({b:e.b,t:e.t,p:this.score(e.b,e.t,e.m,d.cards)}))}},
+  face(ri,cards){return cardFace(cards,SUITS[ri%4])},
+  headline(ri,cards,dealer){return `${cards} kort <em>· ${esc(S.players[dealer])} gir</em>`},
+  progress(ri){
+    const sch=this.schedule(),m=Math.max(...sch);
+    return `<div class="course" aria-hidden="true">${sch.map((c,i)=>`<span class="${i<ri?'done':i===ri?'now':''}" style="height:${Math.max(10,Math.round(c/m*100))}%"></span>`).join('')}</div>`;
+  },
+  step(k,i,dir){
+    const e=S.draft.e[i];
+    if(k==='b')e.b=Math.max(0,Math.min(S.draft.cards,e.b+dir));
+    if(k==='t')e.t=Math.max(0,Math.min(S.draft.cards,e.t+dir));
+    if(k==='m')e.m=(e.m||0)+dir;
+  },
+  entry(order,name,editing){
+    const d=S.draft,cards=d.cards,manual=S.settings.scoring==='manual';
+    const bidSum=d.e.reduce((a,e)=>a+e.b,0),trickSum=d.e.reduce((a,e)=>a+e.t,0);
+    let rows='',tally='',action='',stages='';
+    if(manual){
+      rows=order.map(i=>`<div class="prow">${name(i)}<div class="step"><button type="button" data-step="m${i}" data-d="-1" aria-label="Minus">−</button><input type="number" id="m${i}" data-man="${i}" value="${d.e[i].m}" inputmode="numeric" aria-label="Poeng for ${esc(S.players[i])}"><button type="button" data-step="m${i}" data-d="1" aria-label="Pluss">+</button></div></div>`).join('');
+      action=`<button class="btn" data-act="saveRound">${editing?'Lagre endringen':'Lagre runden'}</button>`;
+    }else if(d.stage==='bids'){
+      rows=order.map(i=>`<div class="prow">${name(i)}${stepper('b'+i,d.e[i].b,0,cards,esc(S.players[i]))}</div>`).join('');
+      const blocked=S.settings.dealerBlock&&bidSum===cards;
+      const txt=blocked?'Giveren må melde noe annet':bidSum>cards?`${bidSum-cards} over – noen må bomme`:bidSum<cards?`${cards-bidSum} under – noen får for mange`:'Går akkurat opp';
+      tally=`<div class="tally ${blocked?'bad':''}"><span>Meldt <b>${bidSum}</b> av ${cards}</span><span>${txt}</span></div>`;
+      action=`<button class="btn" data-act="toTricks" ${blocked?'disabled':''}>Spill runden</button>`;
+    }else{
+      rows=order.map(i=>{const e=d.e[i],p=this.score(e.b,e.t,0,cards),hit=e.b===e.t;
+        return `<div class="prow">${name(i,`meldte ${e.b} · ${hit?`<b>${signed(p)}</b>`:`<span class="miss">${signed(p)}</span>`}`)}${stepper('t'+i,e.t,0,cards,esc(S.players[i]))}</div>`}).join('');
+      const ok=trickSum===cards;
+      tally=`<div class="tally ${ok?'':'bad'}"><span>Stikk <b>${trickSum}</b> av ${cards}</span><span>${ok?'Stemmer':trickSum<cards?`${cards-trickSum} mangler`:`${trickSum-cards} for mange`}</span></div>`;
+      action=`<div class="btns"><button class="btn line" data-act="toBids" aria-label="Tilbake til meldinger">←</button><button class="btn" data-act="saveRound" ${ok?'':'disabled'}>${editing?'Lagre endringen':'Lagre runden'}</button></div>`;
+    }
+    if(!manual)stages=`<div class="stages"><span class="${d.stage==='bids'?'on':''}">Meldinger</span><span class="${d.stage==='tricks'?'on':''}">Stikk</span></div>`;
+    return {rows,tally,action,stages};
+  },
+  roundLabel(r){return `<span class="cd">${r.cards} kort</span>`},
+  cell(r,i){const e=r.e[i],manual=S.settings.scoring==='manual',hit=e.b===e.t;
+    return {cls:manual?'':hit?'hit':'miss',detail:manual?'':`${e.b}/${e.t}`}},
+  padNote(){return S.settings.scoring==='manual'?'':'meldt / tatt'},
+  liveNow(n){
+    return n.bids?`<div class="bids">${n.bids.map((b,i)=>`<span class="${i===meIdx()?'me':''}">${esc(S.players[i])}<b>${b}</b></span>`).join('')}</div><div class="tally"><span>Meldt <b>${n.bids.reduce((a,b)=>a+b,0)}</b> av ${n.cards}</span></div>`
+      :'<p class="note">Venter på meldingene.</p>';
+  },
+  liveBids(){return (S.settings.scoring!=='manual'&&S.draft&&S.draft.stage==='tricks')?S.draft.e.map(e=>e.b):0},
+  setup(sw){
+    const n=S.players.filter(p=>p.trim()).length,cap=this.maxAllowed(n),mc=Math.min(S.settings.maxCards,cap),s=S.settings;
+    return `<div class="opts">
+      <div class="opt"><label for="mc">Flest kort</label><select id="mc" data-set="maxCards">${Array.from({length:cap},(_,i)=>i+1).reverse().map(c=>`<option ${c===mc?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div class="opt"><label for="ord">Rekkefølge</label><select id="ord" data-set="order"><option value="down" ${s.order==='down'?'selected':''}>${mc} ned til 1 og opp</option><option value="up" ${s.order==='up'?'selected':''}>1 opp til ${mc} og ned</option></select></div>
+      <div class="opt"><label for="sc">Poeng</label><select id="sc" data-set="scoring">
+        <option value="ten" ${s.scoring==='ten'?'selected':''}>10 + stikk, bom gir 0</option>
+        <option value="minus" ${s.scoring==='minus'?'selected':''}>10 + stikk, bom gir minus</option>
+        <option value="manual" ${s.scoring==='manual'?'selected':''}>Før poeng for hånd</option></select></div>
+      ${dealerOpt()}
+      ${s.scoring==='manual'?'':sw('zeroFive',s.zeroFive,'Nullmelding gir 5 poeng','Når runden har 5 kort eller færre, gir det å melde og klare 0 stikk 5 poeng i stedet for 10.')}
+      ${sw('dealerBlock',s.dealerBlock,'Giver kan ikke gå opp','Summen av meldingene får ikke bli lik antall kort.')}
+    </div>
+    <p class="note">${mc*2} runder. Med ${n||'?'} spillere går det maks ${cap} kort hver.</p>`;
+  },
+  onStart(){S.settings.maxCards=Math.min(S.settings.maxCards,this.maxAllowed(S.players.length))},
+  comments(add,c){
+    const {R,n,N,nm,pick}=c;
+    if(S.settings.scoring==='manual')return;
+    const hit=(k,i)=>R[k].e[i].b===R[k].e[i].t;
+    for(let i=0;i<N;i++){
+      let h=0;for(let k=n-1;k>=0&&hit(k,i);k--)h++;
+      let m=0;for(let k=n-1;k>=0&&!hit(k,i);k--)m++;
+      if(h>=3)add(50+h*5,pick([`${nm(i)} har klart meldingen ${h} runder på rad.`,`${nm(i)} er varm: ${h} treff på rad.`],5+i),i);
+      if(m>=3)add(56+m*5,pick([`${nm(i)} har bommet ${m} runder på rad. Kanskje prøve å melde null?`,`${m} bom på rad for ${nm(i)}. Formkurven peker nedover.`],6+i),i);
+    }
+    const hits=R[n-1].e.filter(e=>e.b===e.t).length;
+    if(hits===N)add(58,pick([`Alle klarte meldingen i runde ${n}. Fredelig bord.`,`Runde ${n}: full klaff for alle.`],7));
+    if(hits===0)add(82,pick([`Ingen klarte meldingen i runde ${n}. Totalt kaos.`,`Runde ${n}: null treff rundt bordet.`],8));
+    R[n-1].e.forEach((e,i)=>{if(e.b>=5&&e.b===e.t)add(52+e.b*3,`${nm(i)} meldte ${e.b} og tok alle ${e.b}. Sterkt.`,i)});
+    if(n>=6){
+      const rate=S.players.map((_,i)=>R.filter((r,k)=>hit(k,i)).length/n);
+      const best=rate.indexOf(Math.max(...rate));
+      add(30,`${nm(best)} har truffet ${Math.round(rate[best]*100)} % av meldingene – best ved bordet.`,best);
+      const zeros=S.players.map((_,i)=>R.filter(r=>r.e[i].b===0&&r.e[i].t===0).length),z=Math.max(...zeros),zi=zeros.indexOf(z);
+      if(z>=3&&zeros.filter(x=>x===z).length===1)add(34,`${nm(zi)} har klart ${z} nullmeldinger. Nulleksperten ved bordet.`,zi);
+    }
+  },
+  encodeSettings(){const st=S.settings;return [st.maxCards,st.order,st.scoring,st.firstDealer,st.zeroFive?1:0]},
+  decodeSettings(a){return {maxCards:a[0],order:a[1],scoring:a[2],firstDealer:a[3],zeroFive:!!a[4],dealerBlock:false}},
+  encodeRound(r){return [r.cards].concat(...r.e.map(e=>[e.b,e.t,e.p]))},
+  decodeRound(a,N){return {cards:a[0],e:Array.from({length:N},(_,i)=>({b:a[1+i*3],t:a[2+i*3],p:a[3+i*3]}))}},
+};
+
+// ---------- Spar dame ----------
+GAMES.sd={
+  name:'Spar dame',blurb:'Unngå hjerter og damen',low:true,minPlayers:3,
+  totalRounds(){return S.sd.end==='rounds'?S.sd.rounds:null},
+  isOver(){
+    if(S.sd.end==='rounds')return S.rounds.length>=S.sd.rounds;
+    return S.rounds.length>0&&Math.max(...totals())>=S.sd.limit;
+  },
+  hv(){return S.sd.hearts==='one'?1:10},
+  aceExtra(){return S.sd.hearts==='tenAce'?10:0},
+  penalty(){return 13*this.hv()+this.aceExtra()+S.sd.queen},  // everything there is to take in one hand
+  moonOf(d){if(S.sd.moon==='off'||d.q<0)return -1;const i=d.e.findIndex(e=>e.h===13);return i>=0&&i===d.q?i:-1},
+  points(d){
+    const sd=S.sd,hv=this.hv(),ax=this.aceExtra(),J=+sd.jack||0,moon=this.moonOf(d);
+    const jackOf=i=>d.j===i?J:0;
+    if(moon>=0){
+      if(sd.moon==='redeal')return d.e.map(()=>0);
+      if(sd.moon==='minus')return d.e.map((_,i)=>i===moon?-this.penalty()+jackOf(i):jackOf(i));
+      return d.e.map((_,i)=>i===moon?jackOf(i):this.penalty()+jackOf(i));   // 'others'
+    }
+    return d.e.map((e,i)=>e.h*hv+(d.a===i?ax:0)+(d.q===i?sd.queen:0)+jackOf(i));
+  },
+  newDraft(){return {q:-1,j:-1,a:-1,e:S.players.map(()=>({h:0}))}},
+  editDraft(r){return {q:r.q,j:r.j,a:r.a,e:r.e.map(e=>({h:e.h}))}},
+  finish(d){const p=this.points(d);return {q:d.q,j:d.j,a:d.a,moon:this.moonOf(d),e:d.e.map((e,i)=>({h:e.h,p:p[i]}))}},
+  face(){return cardFace('D','♠')},
+  passFor(ri){
+    const p=S.sd.pass,N=S.players.length;
+    if(p==='none')return '';
+    if(p==='l2')return 'Send 2 kort til venstre';
+    if(p==='l3')return 'Send 3 kort til venstre';
+    const cyc=N===4?['til venstre','til høyre','over bordet',null]:['til venstre','til høyre',null];
+    const dir=cyc[ri%cyc.length];
+    return dir?`Send 3 kort ${dir}`:'Ingen kortbytte denne runden';
+  },
+  headline(ri,cards,dealer){return `${esc(S.players[dealer])} gir`},
+  progress(ri){
+    const pass=this.passFor(ri);
+    let bar='';
+    if(S.sd.end==='rounds'){
+      bar=`<div class="course flat" aria-hidden="true">${Array.from({length:S.sd.rounds},(_,i)=>`<span class="${i<ri?'done':i===ri?'now':''}"></span>`).join('')}</div>`;
+    }else{
+      const t=totals(),hi=Math.max(0,...t),pct=Math.min(100,Math.round(hi/S.sd.limit*100));
+      bar=`<div class="meter" aria-hidden="true"><i style="width:${pct}%"></i></div><div class="note">Høyeste sum ${hi} av ${S.sd.limit}</div>`;
+    }
+    return `${pass?`<div class="pass">${pass}</div>`:''}${bar}`;
+  },
+  step(k,i,dir){if(k==='h'){const e=S.draft.e[i];e.h=Math.max(0,Math.min(13,e.h+dir))}},
+  pickCard(card,i){const d=S.draft;d[card]=d[card]===i?-1:i},
+  entry(order,name,editing){
+    const d=S.draft,sd=S.sd,hSum=d.e.reduce((a,e)=>a+e.h,0);
+    const pts=this.points(d),moon=this.moonOf(d);
+    const chip=(card,i,label,red)=>`<button type="button" class="chip ${red?'r':''} ${d[card]===i?'on':''}" data-card="${card}" data-i="${i}" aria-pressed="${d[card]===i}">${label}</button>`;
+    const rows=order.map(i=>`<div class="prow sdrow"><div class="pcol">${name(i,`<b>${signed(pts[i])}</b> poeng`)}
+      <div class="chips">${chip('q',i,'D♠',false)}${+sd.jack?chip('j',i,'Kn♦',true):''}${sd.hearts==='tenAce'?chip('a',i,'E♥',true):''}</div></div>
+      <div class="hcol"><span class="sc">Hjerter</span>${stepper('h'+i,d.e[i].h,0,13,esc(S.players[i]))}</div></div>`).join('');
+    const miss=[];
+    if(hSum!==13)miss.push(hSum<13?`${13-hSum} hjerter mangler`:`${hSum-13} hjerter for mye`);
+    if(d.q<0)miss.push('hvem tok spar dame?');
+    if(+sd.jack&&d.j<0)miss.push('hvem tok ruter knekt?');
+    if(sd.hearts==='tenAce'){if(d.a<0)miss.push('hvem tok hjerter ess?');else if(d.e[d.a].h<1)miss.push('den som tok hjerter ess må ha minst én hjerter');}
+    const ok=!miss.length;
+    const moonTxt=moon>=0?`${esc(S.players[moon])} skyter månen!`:'';
+    const tally=`<div class="tally ${ok?'':'bad'}"><span>Hjerter <b>${hSum}</b> av 13</span><span>${ok?(moonTxt||'Stemmer'):cap(miss[0])}</span></div>`;
+    const action=`<button class="btn" data-act="saveRound" ${ok?'':'disabled'}>${editing?'Lagre endringen':'Lagre runden'}</button>`;
+    return {rows,tally,action,stages:`<p class="note">Legg inn antall hjerter for hver, og trykk på kortet hos den som tok det.</p>`};
+  },
+  roundLabel(r){return r.moon>=0?'<span class="cd">måne</span>':''},
+  cell(r,i){const e=r.e[i],bits=[];
+    if(e.h)bits.push(e.h+'♥');if(r.q===i)bits.push('D♠');if(r.j===i)bits.push('Kn♦');
+    return {cls:e.p<=0?'hit':'miss',detail:bits.join(' ')||'–'}},
+  padNote(){return 'hjerter og kort tatt'},
+  liveNow(n){return ''},
+  liveBids(){return 0},
+  setup(sw){
+    const sd=S.sd,n=S.players.filter(p=>p.trim()).length;
+    const o=(v,cur,label)=>`<option value="${v}" ${String(v)===String(cur)?'selected':''}>${label}</option>`;
+    const r=n?52%n:0,out=Array.from({length:r},(_,k)=>k+2);
+    const remove=n<3?'Spar dame trenger minst 3 spillere.':r?`Med ${n} spillere: ta ut kløver ${out.length>1?out.slice(0,-1).join(', ')+' og '+out.at(-1):out[0]}, så får alle ${Math.floor(52/n)} kort.`:`Med ${n} spillere brukes hele kortstokken, ${52/n} kort hver.`;
+    return `<div class="opts">
+      <div class="opt"><label for="sd-hearts">Hjerter</label><select id="sd-hearts" data-sd="hearts">${o('one',sd.hearts,'1 poeng hver')}${o('ten',sd.hearts,'10 poeng hver')}${o('tenAce',sd.hearts,'10 hver, ess 20')}</select></div>
+      <div class="opt"><label for="sd-queen">Spar dame</label><select id="sd-queen" data-sd="queen">${o(13,sd.queen,'13 poeng')}${o(100,sd.queen,'100 poeng')}</select></div>
+      <div class="opt"><label for="sd-jack">Ruter knekt</label><select id="sd-jack" data-sd="jack">${o(0,sd.jack,'Teller ikke')}${o(-10,sd.jack,'−10 poeng')}${o(-50,sd.jack,'−50 poeng')}${o(-100,sd.jack,'−100 poeng')}</select></div>
+      <div class="opt"><label for="sd-moon">Skyte månen</label><select id="sd-moon" data-sd="moon">${o('others',sd.moon,'Andre får poengene')}${o('minus',sd.moon,'Skytteren får minus')}${o('redeal',sd.moon,'Ingen poeng, ny giv')}${o('off',sd.moon,'Ingen regel')}</select></div>
+      <div class="opt"><label for="sd-end">Slutt</label><select id="sd-end" data-sd="end">${o('limit',sd.end,'Ved poenggrense')}${o('rounds',sd.end,'Fast antall runder')}</select></div>
+      ${sd.end==='limit'
+        ?`<div class="opt"><label for="sd-limit">Poenggrense</label><select id="sd-limit" data-sd="limit">${[50,100,150,200,300,500].map(v=>o(v,sd.limit,v+' poeng')).join('')}</select></div>`
+        :`<div class="opt"><label for="sd-rounds">Antall runder</label><select id="sd-rounds" data-sd="rounds">${[4,5,6,8,10,12,15,20].map(v=>o(v,sd.rounds,v+' runder')).join('')}</select></div>`}
+      <div class="opt"><label for="sd-pass">Kortbytte</label><select id="sd-pass" data-sd="pass">${o('none',sd.pass,'Ingen')}${o('l2',sd.pass,'2 til venstre')}${o('l3',sd.pass,'3 til venstre')}${o('rot',sd.pass,'3, roterende')}</select></div>
+      ${dealerOpt()}
+    </div>
+    <p class="note">Lavest sum vinner. Skyte månen betyr å ta alle hjerterne og spar dame i samme runde. ${remove}</p>`;
+  },
+  onStart(){},
+  comments(add,c){
+    const {R,n,N,nm,pick,pts}=c,last=R[n-1];
+    if(last.moon>=0)add(98,pick([`${nm(last.moon)} skjøt månen! Alle hjerter og damen i én runde.`,`Månelanding: ${nm(last.moon)} tok absolutt alt.`],1),last.moon);
+    if(last.q>=0&&last.moon<0){
+      const qi=last.q,times=R.filter(r=>r.q===qi).length,prevSame=n>=2&&R[n-2].q===qi;
+      if(prevSame)add(74,pick([`Spar dame liker ${nm(qi)}: to runder på rad.`,`${nm(qi)} tok spar dame igjen. Hun har flyttet inn.`],2),qi);
+      else if(times>=3)add(60+times*2,`Spar dame har havnet hos ${nm(qi)} ${times} ganger i kveld.`,qi);
+      else add(36,pick([`${nm(qi)} fikk spar dame denne runden.`,`Damen gikk til ${nm(qi)}.`],3),qi);
+    }
+    last.e.forEach((e,i)=>{if(e.h===13&&last.q!==i)add(70,`${nm(i)} tok alle 13 hjerterne, men slapp unna damen.`,i)});
+    for(let i=0;i<N;i++){let z=0;for(let k=n-1;k>=0&&R[k].e[i].p<=0;k--)z++;
+      if(z>=3)add(58+z*4,pick([`${nm(i)} har gått helt fri ${z} runder på rad.`,`${z} rene runder på rad for ${nm(i)}. Teflon.`],4+i),i)}
+    const clean=last.e.map((e,i)=>e.p<=0?i:-1).filter(i=>i>=0);
+    if(clean.length===1&&last.moon<0)add(34,`${nm(clean[0])} var den eneste som gikk fri i runde ${n}.`,clean[0]);
+    if(last.j>=0&&+S.sd.jack)add(40,`${nm(last.j)} fanget ruter knekt og trekker fra ${-S.sd.jack}.`,last.j);
+    if(S.sd.end==='limit'&&S.phase!=='done'){
+      const worst=pts.indexOf(Math.max(...pts)),left=S.sd.limit-pts[worst];
+      if(left>0&&left<=S.sd.limit*0.2)add(78,`${nm(worst)} er bare ${left} poeng fra ${S.sd.limit}. Spillet kan ta slutt når som helst.`,worst);
+    }
+  },
+  encodeSettings(){const s=S.sd;return [s.hearts,s.queen,s.jack,s.moon,s.end,s.limit,s.rounds,s.pass,S.settings.firstDealer]},
+  decodeSettings(a){return {hearts:a[0],queen:a[1],jack:a[2],moon:a[3],end:a[4],limit:a[5],rounds:a[6],pass:a[7]}},
+  encodeRound(r){return [r.q,r.j,r.a,r.moon].concat(r.e.map(e=>e.h),r.e.map(e=>e.p))},
+  decodeRound(a,N){return {q:a[0],j:a[1],a:a[2],moon:a[3],e:Array.from({length:N},(_,i)=>({h:a[4+i],p:a[4+N+i]}))}},
+};
+const G=()=>GAMES[S.game]||GAMES.bb;
+
+// ---- ranking (direction depends on the game) ----
+const better=(a,b)=>G().low?a<b:a>b;
+const ranksOf=t=>t.map(v=>1+t.filter(x=>better(x,v)).length);   // ties share a place: 1, 1, 3
+function standingsOrder(){const t=totals();return {t,order:t.map((v,i)=>i).sort((a,b)=>G().low?t[a]-t[b]:t[b]-t[a])}}
 function moves(){ // places gained (+) or lost (−) in the last round
   if(S.rounds.length<2)return S.players.map(()=>0);
   const prev=S.players.map(()=>0);S.rounds.slice(0,-1).forEach(r=>r.e.forEach((e,i)=>prev[i]+=e.p));
@@ -297,6 +543,7 @@ function moves(){ // places gained (+) or lost (−) in the last round
 }
 const medal=(rk,played)=>played&&rk<=3?`<span class="medal m${rk}" aria-label="Plass ${rk}">${rk}</span>`:`<span class="r">${rk}</span>`;
 const moveTag=m=>m>0?`<span class="mv up" aria-label="opp ${m}">↑${m>1?m:''}</span>`:m<0?`<span class="mv dn" aria-label="ned ${-m}">↓${m<-1?-m:''}</span>`:'';
+function newDraft(){return G().newDraft()}
 
 // ---- views ----
 function render(){
@@ -306,11 +553,16 @@ function render(){
   app.innerHTML=standingsView()+commentView()+(S.phase==='done'?doneView():roundView())+logView()+shareView()+footerView();
   drawQR();
 }
-
+function dealerOpt(){
+  return `<div class="opt"><label for="fd">Første giver</label><select id="fd" data-set="firstDealer">${S.players.map((p,i)=>`<option value="${i}" ${i===S.settings.firstDealer?'selected':''}>${esc(p||'Spiller '+(i+1))}</option>`).join('')}</select></div>`;
+}
 function setupView(){
-  const n=S.players.filter(p=>p.trim()).length,cap=maxAllowed(n),mc=Math.min(S.settings.maxCards,cap),s=S.settings;
-  const sw=(key,title,sub)=>`<div class="opt sw"><label for="o-${key}">${title}${sub?`<small>${sub}</small>`:''}</label><span class="switch"><input type="checkbox" id="o-${key}" data-set="${key}" ${s[key]?'checked':''}><i></i></span></div>`;
-  return `<header><h1>Bondebridge<em>poengblokk</em></h1></header>
+  const g=G(),n=S.players.filter(p=>p.trim()).length;
+  const sw=(key,val,title,sub)=>`<div class="opt sw"><label for="o-${key}">${title}${sub?`<small>${sub}</small>`:''}</label><span class="switch"><input type="checkbox" id="o-${key}" data-set="${key}" ${val?'checked':''}><i></i></span></div>`;
+  return `<header><h1>${g.name}<em>poengblokk</em></h1></header>
+  <section>
+    <div class="games" role="group" aria-label="Velg spill">${Object.entries(GAMES).map(([k,x])=>`<button type="button" data-game="${k}" aria-pressed="${S.game===k}"><b>${x.name}</b><small>${x.blurb}</small></button>`).join('')}</div>
+  </section>
   <section>
     <div class="head"><h2>Spillere</h2><span class="sc">${n} ved bordet</span></div>
     <div class="players">${S.players.map((p,i)=>`<div class="plrow"><span class="seat">${i+1}</span><input type="text" id="pl${i}" data-pl="${i}" value="${esc(p)}" placeholder="Navn" autocomplete="off" aria-label="Spiller ${i+1}"><button type="button" class="mv" data-mv="${i}" data-d="-1" aria-label="Flytt ${esc(p||'spiller '+(i+1))} opp" ${i===0?'aria-disabled="true"':''}>↑</button><button type="button" class="mv" data-mv="${i}" data-d="1" aria-label="Flytt ${esc(p||'spiller '+(i+1))} ned" ${i===S.players.length-1?'aria-disabled="true"':''}>↓</button><button type="button" data-rm="${i}" aria-label="Fjern ${esc(p||'spiller '+(i+1))}">×</button></div>`).join('')}</div>
@@ -319,20 +571,9 @@ function setupView(){
   </section>
   <section>
     <h2>Regler</h2>
-    <div class="opts">
-      <div class="opt"><label for="mc">Flest kort</label><select id="mc" data-set="maxCards">${Array.from({length:cap},(_,i)=>i+1).reverse().map(c=>`<option ${c===mc?'selected':''}>${c}</option>`).join('')}</select></div>
-      <div class="opt"><label for="ord">Rekkefølge</label><select id="ord" data-set="order"><option value="down" ${s.order==='down'?'selected':''}>${mc} ned til 1 og opp</option><option value="up" ${s.order==='up'?'selected':''}>1 opp til ${mc} og ned</option></select></div>
-      <div class="opt"><label for="sc">Poeng</label><select id="sc" data-set="scoring">
-        <option value="ten" ${s.scoring==='ten'?'selected':''}>10 + stikk, bom gir 0</option>
-        <option value="minus" ${s.scoring==='minus'?'selected':''}>10 + stikk, bom gir minus</option>
-        <option value="manual" ${s.scoring==='manual'?'selected':''}>Før poeng for hånd</option></select></div>
-      <div class="opt"><label for="fd">Første giver</label><select id="fd" data-set="firstDealer">${S.players.map((p,i)=>`<option value="${i}" ${i===s.firstDealer?'selected':''}>${esc(p||'Spiller '+(i+1))}</option>`).join('')}</select></div>
-      ${s.scoring==='manual'?'':sw('zeroFive','Nullmelding gir 5 poeng','Når runden har 5 kort eller færre, gir det å melde og klare 0 stikk 5 poeng i stedet for 10.')}
-      ${sw('dealerBlock','Giver kan ikke gå opp','Summen av meldingene får ikke bli lik antall kort.')}
-    </div>
-    <p class="note">${mc*2} runder. Med ${n||'?'} spillere går det maks ${cap} kort hver.</p>
+    ${g.setup(sw)}
   </section>
-  <button class="btn" data-act="start" ${n<2?'disabled':''}>Start spillet</button>`;
+  <button class="btn" data-act="start" ${n<g.minPlayers?'disabled':''}>Start spillet</button>`;
 }
 
 function standingsView(){
@@ -343,33 +584,15 @@ function standingsView(){
 }
 
 function roundView(){
-  const sch=schedule(),editing=S.editing!==null,ri=editing?S.editing:S.rounds.length;
-  const d=S.draft,cards=d.cards,dealer=dealerFor(ri),manual=S.settings.scoring==='manual';
-  const bidSum=d.e.reduce((a,e)=>a+e.b,0),trickSum=d.e.reduce((a,e)=>a+e.t,0);
-  const order=S.players.map((_,i)=>(dealer+1+i)%S.players.length); // left of the dealer bids first
+  const g=G(),editing=S.editing!==null,ri=editing?S.editing:S.rounds.length;
+  const d=S.draft,dealer=dealerFor(ri),total=g.totalRounds();
+  const order=S.players.map((_,i)=>(dealer+1+i)%S.players.length); // left of the dealer starts
   const name=(i,sub)=>`<div class="pname">${esc(S.players[i])}${i===dealer?'<span class="tag">gir</span>':''}${sub?`<span class="sub">${sub}</span>`:''}</div>`;
-  let rows='',tally='',action='';
-  if(manual){
-    rows=order.map(i=>`<div class="prow">${name(i)}<div class="step"><button type="button" data-step="m${i}" data-d="-1" aria-label="Minus">−</button><input type="number" id="m${i}" data-man="${i}" value="${d.e[i].m}" inputmode="numeric" aria-label="Poeng for ${esc(S.players[i])}"><button type="button" data-step="m${i}" data-d="1" aria-label="Pluss">+</button></div></div>`).join('');
-    action=`<button class="btn" data-act="saveRound">${editing?'Lagre endringen':'Lagre runden'}</button>`;
-  }else if(d.stage==='bids'){
-    rows=order.map(i=>`<div class="prow">${name(i)}${stepper('b'+i,d.e[i].b,0,cards,esc(S.players[i]))}</div>`).join('');
-    const blocked=S.settings.dealerBlock&&bidSum===cards;
-    const txt=blocked?'Giveren må melde noe annet':bidSum>cards?`${bidSum-cards} over – noen må bomme`:bidSum<cards?`${cards-bidSum} under – noen får for mange`:'Går akkurat opp';
-    tally=`<div class="tally ${blocked?'bad':''}"><span>Meldt <b>${bidSum}</b> av ${cards}</span><span>${txt}</span></div>`;
-    action=`<button class="btn" data-act="toTricks" ${blocked?'disabled':''}>Spill runden</button>`;
-  }else{
-    rows=order.map(i=>{const e=d.e[i],p=score(e.b,e.t,0,cards),hit=e.b===e.t;
-      return `<div class="prow">${name(i,`meldte ${e.b} · ${hit?`<b>${signed(p)}</b>`:`<span class="miss">${signed(p)}</span>`}`)}${stepper('t'+i,e.t,0,cards,esc(S.players[i]))}</div>`}).join('');
-    const ok=trickSum===cards;
-    tally=`<div class="tally ${ok?'':'bad'}"><span>Stikk <b>${trickSum}</b> av ${cards}</span><span>${ok?'Stemmer':trickSum<cards?`${cards-trickSum} mangler`:`${trickSum-cards} for mange`}</span></div>`;
-    action=`<div class="btns"><button class="btn line" data-act="toBids" aria-label="Tilbake til meldinger">←</button><button class="btn" data-act="saveRound" ${ok?'':'disabled'}>${editing?'Lagre endringen':'Lagre runden'}</button></div>`;
-  }
-  const stages=manual?'':`<div class="stages"><span class="${d.stage==='bids'?'on':''}">Meldinger</span><span class="${d.stage==='tricks'?'on':''}">Stikk</span></div>`;
+  const {rows,tally,action,stages}=g.entry(order,name,editing);
   return `<section id="round">
-    <div class="round-top">${playCard(cards,ri)}
-      <div class="round-meta"><div><div class="sc">${editing?'Retter runde':'Runde'} ${ri+1} av ${sch.length}</div><div class="big">${cards} kort <em>· ${esc(S.players[dealer])} gir</em></div></div>
-      ${course(ri)}</div></div>
+    <div class="round-top">${g.face(ri,d.cards)}
+      <div class="round-meta"><div><div class="sc">${editing?'Retter runde':'Runde'} ${ri+1}${total?` av ${total}`:''}</div><div class="big">${g.headline(ri,d.cards,dealer)}</div></div>
+      ${g.progress(ri)}</div></div>
     ${stages}
     <div class="plist">${rows}</div>${tally}${action}
     ${editing?'<div class="links"><button class="link" data-act="cancelEdit">Avbryt rettingen</button></div>':''}
@@ -377,24 +600,25 @@ function roundView(){
 }
 
 function doneView(){
-  const t=totals(),top=Math.max(...t),w=S.players.filter((p,i)=>t[i]===top);
+  const {t,order}=standingsOrder(),top=t[order[0]],w=S.players.filter((p,i)=>t[i]===top);
   return `<section class="winner"><span class="sc">Ferdig spilt</span><div class="who">${w.map(esc).join(' og ')}<em>vant med ${top} poeng</em></div></section>`;
 }
 
 function logView(){
   if(!S.rounds.length)return `<section><h2>Poengblokka</h2><p class="empty">Rundene føres her når de er lagret.</p></section>`;
-  const t=totals(),manual=S.settings.scoring==='manual',ro=MODE==='board',me=meIdx();
+  const g=G(),t=totals(),ro=MODE==='board',me=meIdx();
   const cols=S.players.map((_,i)=>i);if(me>=0){cols.splice(me,1);cols.unshift(me)}
   const mc=i=>i===me?' me':'';
-  return `<section><div class="head"><h2>Poengblokka</h2>${ro?(manual?'':'<span class="note">meldt / tatt</span>'):'<span class="note">Trykk en rad for å rette</span>'}</div>
+  const note=g.padNote();
+  return `<section><div class="head"><h2>Poengblokka</h2>${ro?(note?`<span class="note">${note}</span>`:''):'<span class="note">Trykk en rad for å rette</span>'}</div>
   <div class="pad"><table><thead><tr><th>Runde</th>${cols.map(i=>`<th class="${mc(i)}">${esc(S.players[i])}</th>`).join('')}</tr></thead>
-  <tbody>${S.rounds.map((r,ri)=>`<tr ${ro?'':`data-edit="${ri}" tabindex="0"`}><td><span class="rd">${ri+1}</span><span class="cd">${r.cards} kort</span></td>${cols.map(i=>{const e=r.e[i];
-    const hit=!manual&&e.b===e.t;return `<td class="${manual?'':hit?'hit':'miss'}${mc(i)}">${e.p}${manual?'':`<span class="bt">${e.b}/${e.t}</span>`}</td>`}).join('')}</tr>`).join('')}</tbody>
+  <tbody>${S.rounds.map((r,ri)=>`<tr ${ro?'':`data-edit="${ri}" tabindex="0"`}><td><span class="rd">${ri+1}</span>${g.roundLabel(r)}</td>${cols.map(i=>{const c=g.cell(r,i);
+    return `<td class="${c.cls}${mc(i)}">${r.e[i].p}${c.detail?`<span class="bt">${c.detail}</span>`:''}</td>`}).join('')}</tr>`).join('')}</tbody>
   <tfoot><tr><td>Sum</td>${cols.map(i=>`<td class="${mc(i)}">${t[i]}</td>`).join('')}</tr></tfoot></table></div></section>`;
 }
 
 function footerView(){
-  if(S.confirmNew)return `<div class="confirm"><b>Slette dette spillet og starte på nytt?</b><p class="note">Spillerne og reglene beholdes. Neste spiller blir første giver.</p><div class="btns"><button class="btn line" data-act="cancelNew">Behold</button><button class="btn danger" data-act="reallyNew">Nytt spill</button></div></div>`;
+  if(S.confirmNew)return `<div class="confirm"><b>Slette dette spillet og starte på nytt?</b><p class="note">Spillerne og reglene beholdes. Neste spiller blir første giver. Du kan bytte spill i oppsettet.</p><div class="btns"><button class="btn line" data-act="cancelNew">Behold</button><button class="btn danger" data-act="reallyNew">Nytt spill</button></div></div>`;
   return `<div class="links">${S.rounds.length&&S.editing===null?'<button class="link" data-act="undo">Angre siste runde</button>':''}<button class="link" data-act="newGame">Nytt spill</button></div>`;
 }
 
@@ -422,23 +646,20 @@ function drawQR(){
 }
 
 // ---- the commentator: finds the most interesting storylines in the score pad ----
-const WORDS=['null','én','to','tre','fire','fem'];
-const cap=w=>w.charAt(0).toUpperCase()+w.slice(1);
 function commentary(){
-  const R=S.rounds,n=R.length,P=S.players,N=P.length;
+  const R=S.rounds,n=R.length,P=S.players,N=P.length,g=G();
   if(!n||N<2)return [];
-  const manual=S.settings.scoring==='manual',total=schedule().length;
+  const total=g.totalRounds();
   const cum=[];let run=P.map(()=>0);
   R.forEach(r=>{run=run.map((v,i)=>v+r.e[i].p);cum.push(run)});
   const rk=cum.map(ranksOf),now=rk[n-1],pts=cum[n-1],lastPlace=Math.max(...now);
   const nm=i=>esc(P[i]);
   const pick=(arr,salt)=>arr[(n*7+salt*3)%arr.length];   // varies by round, same on every phone
   const leadersAt=k=>rk[k].map((x,i)=>x===1?i:-1).filter(i=>i>=0);
-  const order=pts.map((v,i)=>i).sort((a,b)=>pts[b]-pts[a]);
-  const gap=pts[order[0]]-pts[order[1]];
+  const order=pts.map((v,i)=>i).sort((a,b)=>g.low?pts[a]-pts[b]:pts[b]-pts[a]);
+  const gap=Math.abs(pts[order[0]]-pts[order[1]]);
   const F=[],used=new Set();
   const add=(w,t,who)=>F.push({w,t,who});
-  const hit=(k,i)=>R[k].e[i].b===R[k].e[i].t;
 
   // from the top to the bottom
   for(let i=0;i<N;i++){
@@ -461,35 +682,15 @@ function commentary(){
   if(n>=2)for(let i=0;i<N;i++){const m=rk[n-2][i]-now[i];
     if(m>=2)add(68+m*4,pick([`${nm(i)} klatrer ${WORDS[m]||m} plasser på én runde.`,`Rakettfart: ${nm(i)} hopper ${WORDS[m]||m} plasser opp.`],3+i),i);
     if(m<=-2)add(64-m*3,pick([`${nm(i)} raser ${WORDS[-m]||-m} plasser ned.`,`Tung runde for ${nm(i)}, ned ${WORDS[-m]||-m} plasser.`],4+i),i)}
-  if(!manual){
-    // streaks
-    for(let i=0;i<N;i++){
-      let h=0;for(let k=n-1;k>=0&&hit(k,i);k--)h++;
-      let m=0;for(let k=n-1;k>=0&&!hit(k,i);k--)m++;
-      if(h>=3)add(50+h*5,pick([`${nm(i)} har klart meldingen ${h} runder på rad.`,`${nm(i)} er varm: ${h} treff på rad.`],5+i),i);
-      if(m>=3)add(56+m*5,pick([`${nm(i)} har bommet ${m} runder på rad. Kanskje prøve å melde null?`,`${m} bom på rad for ${nm(i)}. Formkurven peker nedover.`],6+i),i);
-    }
-    // the table as a whole
-    const hits=R[n-1].e.filter(e=>e.b===e.t).length;
-    if(hits===N)add(58,pick([`Alle klarte meldingen i runde ${n}. Fredelig bord.`,`Runde ${n}: full klaff for alle.`],7));
-    if(hits===0)add(82,pick([`Ingen klarte meldingen i runde ${n}. Totalt kaos.`,`Runde ${n}: null treff rundt bordet.`],8));
-    // bold bids
-    R[n-1].e.forEach((e,i)=>{if(e.b>=5&&e.b===e.t)add(52+e.b*3,`${nm(i)} meldte ${e.b} og tok alle ${e.b}. Sterkt.`,i)});
-    // hit rate and zero specialists once there's a sample
-    if(n>=6){
-      const rate=P.map((_,i)=>R.filter((r,k)=>hit(k,i)).length/n);
-      const best=rate.indexOf(Math.max(...rate));
-      add(30,`${nm(best)} har truffet ${Math.round(rate[best]*100)} % av meldingene – best ved bordet.`,best);
-      const zeros=P.map((_,i)=>R.filter(r=>r.e[i].b===0&&r.e[i].t===0).length),z=Math.max(...zeros),zi=zeros.indexOf(z);
-      if(z>=3&&zeros.filter(x=>x===z).length===1)add(34,`${nm(zi)} har klart ${z} nullmeldinger. Nulleksperten ved bordet.`,zi);
-    }
-  }
+  // game-specific storylines
+  g.comments(add,{R,n,N,nm,pick,pts,rk});
   // shape of the race
   if(n>=4){const L0=leadersAt(0);if(L0.length===1&&rk.every(x=>x[L0[0]]===1&&x.filter(y=>y===1).length===1))add(48,`${nm(L0[0])} har ledet hver eneste runde så langt.`,L0[0])}
-  if(n>=3&&gap>=30)add(40,pick([`${nm(order[0])} leder med ${gap} poeng. Resten spiller om sølvet.`,`${gap} poeng ned til ${nm(order[0])}. Det lukter walkover.`],9),order[0]);
-  if(n>=4&&gap>0&&gap<=3)add(46,`Bare ${gap} ${gap===1?'poeng':'poeng'} skiller ${nm(order[0])} og ${nm(order[1])} på toppen.`);
-  if(n===total/2)add(86,`Halvveis! ${nm(order[0])} leder${gap?` med ${gap} poeng`:''}.`,order[0]);
-  if(n===total-1)add(88,gap?`Én runde igjen. ${nm(order[0])} har ${gap} poeng å gå på.`:`Én runde igjen, og det står likt på toppen!`);
+  const big=g.low?20:30;
+  if(n>=3&&gap>=big)add(40,pick([`${nm(order[0])} leder med ${gap} poeng. Resten spiller om sølvet.`,`${gap} poeng skiller ${nm(order[0])} fra resten. Det lukter walkover.`],9),order[0]);
+  if(n>=4&&gap>0&&gap<=3)add(46,`Bare ${gap} poeng skiller ${nm(order[0])} og ${nm(order[1])} på toppen.`);
+  if(total&&n===total/2)add(86,`Halvveis! ${nm(order[0])} leder${gap?` med ${gap} poeng`:''}.`,order[0]);
+  if(total&&n===total-1)add(88,gap?`Én runde igjen. ${nm(order[0])} har ${gap} poeng å gå på.`:`Én runde igjen, og det står likt på toppen!`);
   if(S.phase==='done')add(99,`${nm(order[0])} vinner${gap?` med ${gap} poeng ned til ${nm(order[1])}`:' – på delt førsteplass'}.`,order[0]);
 
   // strongest two stories, preferably about different people
@@ -503,39 +704,43 @@ function commentView(){
   return `<section class="comment" aria-live="polite"><span class="sc"><span class="cl" aria-hidden="true">♣</span> Kommentatoren</span>${c.map(t=>`<p>${t}</p>`).join('')}</section>`;
 }
 function boardView(){
-  const head=`<header><h1>Bondebridge<em>tavla</em></h1>${statusView()}</header>`;
+  const g=G();
+  const head=`<header><h1>${REMOTE?g.name:'Poengtavla'}<em>tavla</em></h1>${statusView()}</header>`;
   if(!REMOTE){
     const msg=SYNC==='off'?'Får ikke kontakt. Sjekk nettet – den kobler seg til igjen av seg selv.'
       :SYNC==='wait'?'Henter stillingen …':'Ingen stilling ennå. Den dukker opp når spillet starter.';
     return head+`<p class="empty">${msg}</p>`;
   }
-  const {t,order}=standingsOrder(),top=t[order[0]],n=REMOTE.now,played=S.rounds.length>0,rk=ranksOf(t),mv=moves();
+  const {t,order}=standingsOrder(),top=t[order[0]],n=REMOTE.now,played=S.rounds.length>0,rk=ranksOf(t),mv=moves(),total=g.totalRounds();
   let now='';
   if(S.phase==='done')now=doneView();
   else if(S.phase==='play'&&n){
-    const bids=n.bids?`<div class="bids">${n.bids.map((b,i)=>`<span class="${i===meIdx()?'me':''}">${esc(S.players[i])}<b>${b}</b></span>`).join('')}</div><div class="tally"><span>Meldt <b>${n.bids.reduce((a,b)=>a+b,0)}</b> av ${n.cards}</span></div>`
-      :'<p class="note">Venter på meldingene.</p>';
-    now=`<section><div class="round-top">${playCard(n.cards,n.round)}<div class="round-meta"><div><div class="sc">Runde ${n.round+1} av ${schedule().length}</div><div class="big">${n.cards} kort <em>· ${esc(S.players[n.dealer]||'')} gir</em></div></div>${course(n.round)}</div></div>${bids}</section>`;
+    now=`<section><div class="round-top">${g.face(n.round,n.cards)}<div class="round-meta"><div><div class="sc">Runde ${n.round+1}${total?` av ${total}`:''}</div><div class="big">${g.headline(n.round,n.cards,n.dealer)}</div></div>${g.progress(n.round)}</div></div>${g.liveNow(n)}</section>`;
   }
-  const list=`<section><div class="head"><h2>Stilling</h2><span class="sc">${S.rounds.length} ${S.rounds.length===1?'runde':'runder'}</span></div>
-    <div class="ranks">${order.map((i,rank)=>{const lead=played&&t[i]===top;
+  const list=`<section><div class="head"><h2>Stilling</h2><span class="sc">${S.rounds.length} ${S.rounds.length===1?'runde':'runder'}${g.low?' · lavest vinner':''}</span></div>
+    <div class="ranks">${order.map(i=>{const lead=played&&t[i]===top;
       const last=played?S.rounds[S.rounds.length-1].e[i].p:null;
-      return `<div class="rank ${lead?'first':''} ${played&&rk[i]<=3?'p'+rk[i]:''} ${i===meIdx()?'me':''}" data-me="${esc(S.players[i])}" role="button" tabindex="0" aria-pressed="${i===meIdx()}">${medal(rk[i],played)}<span class="nm">${esc(S.players[i])}${i===meIdx()?'<span class="you">deg</span>':''} ${moveTag(mv[i])}<span class="sub">${!played?'&nbsp;':(lead?'leder':signed(t[i]-top)+' bak')+` · sist ${signed(last)}`}</span></span><span class="tt">${t[i]}</span></div>`}).join('')}</div><p class="note">${meIdx()>=0?'Trykk på navnet ditt igjen for å fjerne markeringen.':'Trykk på navnet ditt for å markere deg selv.'}</p></section>`;
+      return `<div class="rank ${lead?'first':''} ${played&&rk[i]<=3?'p'+rk[i]:''} ${i===meIdx()?'me':''}" data-me="${esc(S.players[i])}" role="button" tabindex="0" aria-pressed="${i===meIdx()}">${medal(rk[i],played)}<span class="nm">${esc(S.players[i])}${i===meIdx()?'<span class="you">deg</span>':''} ${moveTag(mv[i])}<span class="sub">${!played?'&nbsp;':(lead?'leder':Math.abs(t[i]-top)+' bak')+` · sist ${signed(last)}`}</span></span><span class="tt">${t[i]}</span></div>`}).join('')}</div><p class="note">${meIdx()>=0?'Trykk på navnet ditt igjen for å fjerne markeringen.':'Trykk på navnet ditt for å markere deg selv.'}</p></section>`;
   return head+commentView()+now+list+logView();
 }
-// compact wire format keeps a 20-round game well under ntfy's 4 KB message limit
+
+// ---- wire format: compact, so a long game stays under ntfy's 4 KB message limit ----
 function encode(){
-  const st=S.settings;
-  const n=(S.phase==='play'&&S.draft&&S.editing===null)
-    ?[S.rounds.length,S.draft.cards,dealerFor(S.rounds.length),(st.scoring!=='manual'&&S.draft.stage==='tricks')?S.draft.e.map(e=>e.b):0]:0;
-  return {v:1,p:S.players,s:[st.maxCards,st.order,st.scoring,st.firstDealer,st.zeroFive?1:0],ph:S.phase,
-    r:S.rounds.map(r=>[r.cards].concat(...r.e.map(e=>[e.b,e.t,e.p]))),n};
+  const g=G();
+  const n=(S.phase==='play'&&S.draft&&S.editing===null)?[S.rounds.length,S.draft.cards||0,dealerFor(S.rounds.length),g.liveBids()]:0;
+  const base={p:S.players,ph:S.phase,r:S.rounds.map(r=>g.encodeRound(r)),n};
+  if(S.game==='bb')return Object.assign({v:1,s:g.encodeSettings()},base);   // v1 stays readable by boards opened before this update
+  return Object.assign({v:2,g:S.game,s:g.encodeSettings()},base);
 }
 function decode(d){
-  if(!d||d.v!==1||!Array.isArray(d.p))return null;
-  const rounds=(d.r||[]).map(a=>({cards:a[0],e:d.p.map((_,i)=>({b:a[1+i*3],t:a[2+i*3],p:a[3+i*3]}))}));
-  return {players:d.p.map(String),settings:{maxCards:d.s[0],order:d.s[1],scoring:d.s[2],firstDealer:d.s[3],zeroFive:!!d.s[4],dealerBlock:false},
-    rounds,phase:d.ph,now:d.n?{round:d.n[0],cards:d.n[1],dealer:d.n[2],bids:d.n[3]||null}:null};
+  if(!d||!Array.isArray(d.p))return null;
+  const game=d.v===1?'bb':d.v===2&&GAMES[d.g]?d.g:null;if(!game)return null;
+  const g=GAMES[game],N=d.p.length;
+  const out={game,players:d.p.map(String),rounds:(d.r||[]).map(a=>g.decodeRound(a,N)),phase:d.ph,
+    now:d.n?{round:d.n[0],cards:d.n[1],dealer:d.n[2],bids:d.n[3]||null}:null};
+  if(game==='bb'){out.settings=g.decodeSettings(d.s);out.sd=Object.assign({},SD_DEFAULT)}
+  else{out.sd=g.decodeSettings(d.s);out.settings=Object.assign({},DEMO.settings,{firstDealer:d.s[8]||0})}
+  return out;
 }
 let lastPushed='',pushTimer=null,pushing=false;
 function schedulePush(){if(MODE!=='keeper')return;clearTimeout(pushTimer);pushTimer=setTimeout(push,700)}
@@ -559,7 +764,7 @@ function listen(){
   es.onmessage=ev=>{
     try{const m=JSON.parse(ev.data);if(m.event&&m.event!=='message')return;
       const g=decode(JSON.parse(m.message));if(!g)return;
-      REMOTE=g;S={players:g.players,settings:g.settings,rounds:g.rounds,phase:g.phase,draft:null,editing:null};
+      REMOTE=g;S={game:g.game,players:g.players,settings:g.settings,sd:g.sd,rounds:g.rounds,phase:g.phase,draft:null,editing:null};
       SYNC='on';render();}catch(e){}
   };
   es.onerror=()=>{const s=es.readyState===2?'off':'wait';if(SYNC!==s){SYNC=s;render()}};
@@ -576,6 +781,10 @@ function toggleMe(name){
   try{ME===null?localStorage.removeItem(KEY+'-me'):localStorage.setItem(KEY+'-me',ME)}catch(e){}
   render();
 }
+function afterSave(){
+  if(G().isOver()){S.phase='done';S.draft=null}
+  else{S.phase='play';if(!S.draft)S.draft=newDraft()}
+}
 document.addEventListener('click',ev=>{
   if(MODE==='board'){const m=ev.target.closest('[data-me]');if(m)toggleMe(m.dataset.me);return}
   const b=ev.target.closest('button,[data-edit]');if(!b||b.disabled||b.getAttribute('aria-disabled')==='true')return;
@@ -586,6 +795,8 @@ document.addEventListener('click',ev=>{
     try{navigator.clipboard.writeText(BOARD_URL).then(done,selectLink)}catch(e){selectLink()}
     return;
   }
+  if(b.dataset.game){S.game=b.dataset.game;return commit()}
+  if(b.dataset.card){G().pickCard(b.dataset.card,+b.dataset.i);return commit()}
   if(b.dataset.mv!==undefined){
     const i=+b.dataset.mv,j=i+(+b.dataset.d);if(j<0||j>=S.players.length)return;
     const P=S.players;[P[i],P[j]]=[P[j],P[i]];
@@ -594,16 +805,13 @@ document.addEventListener('click',ev=>{
   }
   if(b.dataset.rm!==undefined){S.players.splice(+b.dataset.rm,1);if(S.settings.firstDealer>=S.players.length)S.settings.firstDealer=0;return commit()}
   if(b.dataset.step){
-    const id=b.dataset.step,d=+b.dataset.d,k=id[0],i=+id.slice(1),e=S.draft.e[i];
-    if(k==='b')e.b=Math.max(0,Math.min(S.draft.cards,e.b+d));
-    if(k==='t')e.t=Math.max(0,Math.min(S.draft.cards,e.t+d));
-    if(k==='m')e.m=(e.m||0)+d;
+    const id=b.dataset.step;G().step(id[0],+id.slice(1),+b.dataset.d);
     return commit();
   }
   if(b.dataset.edit!==undefined&&S.phase!=='setup'){
     const ri=+b.dataset.edit,r=S.rounds[ri];
     S.stash=S.editing===null?S.draft:S.stash;
-    S.editing=ri;S.draft={cards:r.cards,stage:'tricks',e:r.e.map(e=>({b:e.b,t:e.t,m:e.p}))};
+    S.editing=ri;S.draft=G().editDraft(r);
     if(S.phase==='done')S.phase='play';
     commit();const rd=$('#round');rd&&rd.scrollIntoView({behavior:'smooth',block:'start'});return;
   }
@@ -611,36 +819,35 @@ document.addEventListener('click',ev=>{
     case 'addp':{S.players.push('');commit();const l=$(`#pl${S.players.length-1}`);l&&l.focus();break}
     case 'start':
       S.players=S.players.map(p=>p.trim()).filter(Boolean);
-      S.settings.maxCards=Math.min(S.settings.maxCards,maxAllowed(S.players.length));
+      G().onStart();
       if(S.settings.firstDealer>=S.players.length)S.settings.firstDealer=0;
       S.rounds=[];S.phase='play';S.editing=null;S.draft=newDraft();commit();window.scrollTo({top:0});break;
     case 'toTricks':S.draft.stage='tricks';S.draft.e.forEach(e=>e.t=e.b);commit();break;
     case 'toBids':S.draft.stage='bids';commit();break;
     case 'saveRound':{
-      const r={cards:S.draft.cards,e:S.draft.e.map(e=>({b:e.b,t:e.t,p:score(e.b,e.t,e.m,S.draft.cards)}))};
+      const r=G().finish(S.draft);
       if(S.editing!==null){S.rounds[S.editing]=r;S.editing=null;S.draft=S.stash||null;S.stash=null}
       else{S.rounds.push(r);S.draft=null}
-      if(S.rounds.length>=schedule().length){S.phase='done';S.draft=null}
-      else if(!S.draft)S.draft=newDraft();
+      afterSave();
       commit();window.scrollTo({top:0,behavior:'smooth'});break;}
-    case 'cancelEdit':S.editing=null;S.draft=S.stash||null;S.stash=null;
-      if(S.rounds.length>=schedule().length){S.phase='done';S.draft=null}else if(!S.draft)S.draft=newDraft();commit();break;
+    case 'cancelEdit':S.editing=null;S.draft=S.stash||null;S.stash=null;afterSave();commit();break;
     case 'undo':S.rounds.pop();S.phase='play';S.draft=newDraft();commit();break;
     case 'newGame':S.confirmNew=true;commit();break;
     case 'cancelNew':S.confirmNew=false;commit();break;
-    case 'reallyNew':{const p=S.players,st=S.settings;S=JSON.parse(JSON.stringify(DEMO));S.players=p;S.settings=st;S.settings.firstDealer=(st.firstDealer+1)%Math.max(p.length,1);commit();window.scrollTo({top:0});break;}
+    case 'reallyNew':{const keep={game:S.game,players:S.players,settings:S.settings,sd:S.sd};S=JSON.parse(JSON.stringify(DEMO));Object.assign(S,keep);S.settings.firstDealer=(keep.settings.firstDealer+1)%Math.max(keep.players.length,1);commit();window.scrollTo({top:0});break;}
   }
 });
 document.addEventListener('input',ev=>{
   const t=ev.target;
   if(t.dataset.pl!==undefined){S.players[+t.dataset.pl]=t.value;save();
-    const btn=$('[data-act="start"]');if(btn)btn.disabled=S.players.filter(p=>p.trim()).length<2;return}
+    const btn=$('[data-act="start"]');if(btn)btn.disabled=S.players.filter(p=>p.trim()).length<G().minPlayers;return}
   if(t.dataset.man!==undefined){S.draft.e[+t.dataset.man].m=parseInt(t.value,10)||0;save()}
 });
 document.addEventListener('change',ev=>{
   if(MODE==='board')return;
-  const t=ev.target,k=t.dataset.set;
+  const t=ev.target,k=t.dataset.set,sk=t.dataset.sd;
   if(t.dataset.pl!==undefined){commit();return}
+  if(sk){const num=['queen','jack','limit','rounds'].includes(sk);S.sd[sk]=num?+t.value:t.value;commit();return}
   if(!k)return;
   if(t.type==='checkbox')S.settings[k]=t.checked;
   else if(k==='maxCards'||k==='firstDealer')S.settings[k]=+t.value;
