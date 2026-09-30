@@ -196,6 +196,10 @@ tfoot td:first-child{font-family:var(--ui);font-size:.68rem;text-transform:upper
 .confirm{display:flex;flex-direction:column;gap:12px;padding:16px 0;border-top:1px solid var(--ink);border-bottom:1px solid var(--rule)}
 .confirm .btn.danger{background:var(--red);color:#fff}
 .empty{padding:22px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);color:var(--ink-2)}
+.comment{gap:8px;padding:0 0 16px;margin-top:-12px;border-bottom:1px solid var(--rule)}
+.comment .cl{color:var(--ink)}
+.comment p{font-family:var(--display);font-weight:400;font-size:1.2rem;line-height:1.3;letter-spacing:-.01em;text-wrap:pretty}
+.comment p+p{font-size:1rem;color:var(--ink-2)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -287,7 +291,7 @@ function render(){
   const app=$('#app');
   if(MODE==='board'){app.innerHTML=boardView();return}
   if(S.phase==='setup'){app.innerHTML=setupView()+shareView();drawQR();return}
-  app.innerHTML=standingsView()+(S.phase==='done'?doneView():roundView())+logView()+shareView()+footerView();
+  app.innerHTML=standingsView()+commentView()+(S.phase==='done'?doneView():roundView())+logView()+shareView()+footerView();
   drawQR();
 }
 
@@ -402,6 +406,88 @@ function drawQR(){
   if(typeof QRCode==='undefined'){el.outerHTML='<p class="note">QR-koden lastet ikke. Kopier lenken i stedet.</p>';return}
   try{new QRCode(el,{text:BOARD_URL,width:432,height:432,colorDark:'#141414',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M})}catch(e){}
 }
+
+// ---- the commentator: finds the most interesting storylines in the score pad ----
+const WORDS=['null','én','to','tre','fire','fem'];
+const cap=w=>w.charAt(0).toUpperCase()+w.slice(1);
+function commentary(){
+  const R=S.rounds,n=R.length,P=S.players,N=P.length;
+  if(!n||N<2)return [];
+  const manual=S.settings.scoring==='manual',total=schedule().length;
+  const cum=[];let run=P.map(()=>0);
+  R.forEach(r=>{run=run.map((v,i)=>v+r.e[i].p);cum.push(run)});
+  const rk=cum.map(ranksOf),now=rk[n-1],pts=cum[n-1],lastPlace=Math.max(...now);
+  const nm=i=>esc(P[i]);
+  const pick=(arr,salt)=>arr[(n*7+salt*3)%arr.length];   // varies by round, same on every phone
+  const leadersAt=k=>rk[k].map((x,i)=>x===1?i:-1).filter(i=>i>=0);
+  const order=pts.map((v,i)=>i).sort((a,b)=>pts[b]-pts[a]);
+  const gap=pts[order[0]]-pts[order[1]];
+  const F=[],used=new Set();
+  const add=(w,t,who)=>F.push({w,t,who});
+  const hit=(k,i)=>R[k].e[i].b===R[k].e[i].t;
+
+  // from the top to the bottom
+  for(let i=0;i<N;i++){
+    if(now[i]!==lastPlace||lastPlace===1)continue;
+    for(let k=Math.max(0,n-6);k<n-1;k++){
+      const L=leadersAt(k);
+      if(L.length===1&&L[0]===i){const d=n-1-k;
+        add(96,`${nm(i)} ledet etter runde ${k+1}. ${d===1?'Én runde':cap(WORDS[d]||String(d))+' runder'} senere ligger ${nm(i)} sist.`,i);break}
+    }
+  }
+  // lead changes
+  if(n>=2){
+    const L=leadersAt(n-1),Lp=leadersAt(n-2);
+    if(L.length===1&&!Lp.includes(L[0])){const i=L[0],first=!rk.slice(0,n-1).some(x=>x[i]===1);
+      add(first?90:76,first?pick([`${nm(i)} tar ledelsen for første gang i kveld.`,`Ny leder: ${nm(i)}! Første gang på toppen i dag.`],1)
+        :pick([`${nm(i)} er tilbake i ledelsen.`,`${nm(i)} tar teten tilbake.`],2),i)}
+    if(L.length===2&&Lp.length===1)add(70,`Delt ledelse: ${nm(L[0])} og ${nm(L[1])} står likt på toppen.`);
+  }
+  // jumps
+  if(n>=2)for(let i=0;i<N;i++){const m=rk[n-2][i]-now[i];
+    if(m>=2)add(68+m*4,pick([`${nm(i)} klatrer ${WORDS[m]||m} plasser på én runde.`,`Rakettfart: ${nm(i)} hopper ${WORDS[m]||m} plasser opp.`],3+i),i);
+    if(m<=-2)add(64-m*3,pick([`${nm(i)} raser ${WORDS[-m]||-m} plasser ned.`,`Tung runde for ${nm(i)}, ned ${WORDS[-m]||-m} plasser.`],4+i),i)}
+  if(!manual){
+    // streaks
+    for(let i=0;i<N;i++){
+      let h=0;for(let k=n-1;k>=0&&hit(k,i);k--)h++;
+      let m=0;for(let k=n-1;k>=0&&!hit(k,i);k--)m++;
+      if(h>=3)add(50+h*5,pick([`${nm(i)} har klart meldingen ${h} runder på rad.`,`${nm(i)} er varm: ${h} treff på rad.`],5+i),i);
+      if(m>=3)add(56+m*5,pick([`${nm(i)} har bommet ${m} runder på rad. Kanskje prøve å melde null?`,`${m} bom på rad for ${nm(i)}. Formkurven peker nedover.`],6+i),i);
+    }
+    // the table as a whole
+    const hits=R[n-1].e.filter(e=>e.b===e.t).length;
+    if(hits===N)add(58,pick([`Alle klarte meldingen i runde ${n}. Fredelig bord.`,`Runde ${n}: full klaff for alle.`],7));
+    if(hits===0)add(82,pick([`Ingen klarte meldingen i runde ${n}. Totalt kaos.`,`Runde ${n}: null treff rundt bordet.`],8));
+    // bold bids
+    R[n-1].e.forEach((e,i)=>{if(e.b>=5&&e.b===e.t)add(52+e.b*3,`${nm(i)} meldte ${e.b} og tok alle ${e.b}. Sterkt.`,i)});
+    // hit rate and zero specialists once there's a sample
+    if(n>=6){
+      const rate=P.map((_,i)=>R.filter((r,k)=>hit(k,i)).length/n);
+      const best=rate.indexOf(Math.max(...rate));
+      add(30,`${nm(best)} har truffet ${Math.round(rate[best]*100)} % av meldingene – best ved bordet.`,best);
+      const zeros=P.map((_,i)=>R.filter(r=>r.e[i].b===0&&r.e[i].t===0).length),z=Math.max(...zeros),zi=zeros.indexOf(z);
+      if(z>=3&&zeros.filter(x=>x===z).length===1)add(34,`${nm(zi)} har klart ${z} nullmeldinger. Nulleksperten ved bordet.`,zi);
+    }
+  }
+  // shape of the race
+  if(n>=4){const L0=leadersAt(0);if(L0.length===1&&rk.every(x=>x[L0[0]]===1&&x.filter(y=>y===1).length===1))add(48,`${nm(L0[0])} har ledet hver eneste runde så langt.`,L0[0])}
+  if(n>=3&&gap>=30)add(40,pick([`${nm(order[0])} leder med ${gap} poeng. Resten spiller om sølvet.`,`${gap} poeng ned til ${nm(order[0])}. Det lukter walkover.`],9),order[0]);
+  if(n>=4&&gap>0&&gap<=3)add(46,`Bare ${gap} ${gap===1?'poeng':'poeng'} skiller ${nm(order[0])} og ${nm(order[1])} på toppen.`);
+  if(n===total/2)add(86,`Halvveis! ${nm(order[0])} leder${gap?` med ${gap} poeng`:''}.`,order[0]);
+  if(n===total-1)add(88,gap?`Én runde igjen. ${nm(order[0])} har ${gap} poeng å gå på.`:`Én runde igjen, og det står likt på toppen!`);
+  if(S.phase==='done')add(99,`${nm(order[0])} vinner${gap?` med ${gap} poeng ned til ${nm(order[1])}`:' – på delt førsteplass'}.`,order[0]);
+
+  // strongest two stories, preferably about different people
+  F.sort((a,b)=>b.w-a.w);
+  const out=[];
+  for(const f of F){if(out.length>=2)break;if(f.who!==undefined&&used.has(f.who))continue;if(f.who!==undefined)used.add(f.who);out.push(f.t)}
+  return out;
+}
+function commentView(){
+  const c=commentary();if(!c.length)return '';
+  return `<section class="comment" aria-live="polite"><span class="sc"><span class="cl" aria-hidden="true">♣</span> Kommentatoren</span>${c.map(t=>`<p>${t}</p>`).join('')}</section>`;
+}
 function boardView(){
   const head=`<header><h1>Bondebridge<em>tavla</em></h1>${statusView()}</header>`;
   if(!REMOTE){
@@ -421,7 +507,7 @@ function boardView(){
     <div class="ranks">${order.map((i,rank)=>{const lead=played&&t[i]===top;
       const last=played?S.rounds[S.rounds.length-1].e[i].p:null;
       return `<div class="rank ${lead?'first':''}">${medal(rk[i],played)}<span class="nm">${esc(S.players[i])} ${moveTag(mv[i])}<span class="sub">${!played?'&nbsp;':(lead?'leder':signed(t[i]-top)+' bak')+` · sist ${signed(last)}`}</span></span><span class="tt">${t[i]}</span></div>`}).join('')}</div></section>`;
-  return head+now+list+logView();
+  return head+commentView()+now+list+logView();
 }
 // compact wire format keeps a 20-round game well under ntfy's 4 KB message limit
 function encode(){
