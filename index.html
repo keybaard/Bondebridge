@@ -12,7 +12,7 @@
 <title>Bondebridge</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..800;1,6..96,400..600&family=Schibsted+Grotesk:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300..800&family=Schibsted+Grotesk:wght@400;500;700&display=swap">
 <style>
 /* Layout: one narrow column printed like card stock in two inks (black + card red).
    Standings pinned as card-corner indices; the round is a small playing card; the log is a ruled score pad with a double-ruled sum. */
@@ -24,7 +24,7 @@
   --rule:#dcdcd6;       /* hairlines */
   --red:#b3121c;        /* card red, the only accent */
   --wash:#ecece7;       /* pressed / subtle fill */
-  --display:"Bodoni Moda","Didot","Bodoni 72",Georgia,serif;
+  --display:"Funnel Display","Schibsted Grotesk",system-ui,-apple-system,sans-serif;
   --ui:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:light;
 }
@@ -40,9 +40,9 @@ body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);fon
 [hidden]{display:none!important}
 .wrap{max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:36px}
 h1,h2{margin:0;font-weight:500;text-wrap:balance}
-h1{font-family:var(--display);font-size:2.6rem;line-height:1;letter-spacing:-.01em;font-weight:600}
-h1 em{font-style:italic;font-weight:400;color:var(--ink-2);font-size:.55em;display:block;margin-top:8px;letter-spacing:0}
-h2{font-family:var(--display);font-size:1.45rem;font-weight:600;letter-spacing:-.005em}
+h1{font-family:var(--display);font-size:2.6rem;line-height:1;letter-spacing:-.025em;font-weight:700}
+h1 em{font-style:normal;font-weight:300;color:var(--ink-2);font-size:.55em;display:block;margin-top:8px;letter-spacing:0}
+h2{font-family:var(--display);font-size:1.4rem;font-weight:700;letter-spacing:-.015em}
 .sc{font-size:.7rem;text-transform:uppercase;letter-spacing:.14em;font-weight:500;color:var(--ink-2)}
 .red{color:var(--red)}
 .num{font-family:var(--display);font-weight:600}
@@ -81,7 +81,7 @@ header{padding-top:28px;display:flex;justify-content:space-between;align-items:f
 .idxs::-webkit-scrollbar{display:none}
 .idx{flex:0 0 auto;display:flex;flex-direction:column;min-width:52px}
 .idx .nm{font-size:.78rem;font-weight:500;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis}
-.idx .tot{font-family:var(--display);font-weight:600;font-size:2rem;line-height:1.05}
+.idx .tot{font-family:var(--display);font-weight:700;letter-spacing:-.02em;font-size:2rem;line-height:1.05}
 .idx .gap{font-size:.72rem;color:var(--ink-2)}
 .idx.lead .tot,.idx.lead .nm{color:var(--red)}
 
@@ -95,7 +95,7 @@ header{padding-top:28px;display:flex;justify-content:space-between;align-items:f
 .pcard .pip{position:absolute;inset:0;display:grid;place-items:center;font-size:2.1rem}
 .round-meta{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;gap:10px}
 .round-meta .big{font-family:var(--display);font-size:1.5rem;font-weight:600;line-height:1.1}
-.round-meta .big em{font-weight:400;color:var(--ink-2)}
+.round-meta .big em{font-style:normal;font-weight:300;color:var(--ink-2)}
 .course{display:flex;align-items:flex-end;gap:2px;height:30px}
 .course span{flex:1;background:var(--rule);border-radius:1px;min-height:3px}
 .course span.done{background:var(--ink-2)}
@@ -169,13 +169,13 @@ tfoot td:first-child{font-family:var(--ui);font-size:.68rem;text-transform:upper
 .rank .r{font-family:var(--display);font-weight:600;color:var(--ink-2)}
 .rank .nm{min-width:0;font-size:1.15rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rank .nm .sub{display:block;font-size:.8rem;font-weight:400;color:var(--ink-2)}
-.rank .tt{font-family:var(--display);font-weight:600;font-size:2.4rem;line-height:1}
+.rank .tt{font-family:var(--display);font-weight:700;letter-spacing:-.02em;font-size:2.4rem;line-height:1}
 .rank.first .r,.rank.first .tt{color:var(--red)}
 .bids{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.9rem}
 .bids span b{font-family:var(--display);font-weight:600;font-size:1.1rem;margin-left:4px}
 .winner{text-align:center;align-items:center;padding:12px 0 4px;gap:6px}
 .winner .who{font-family:var(--display);font-size:2.6rem;font-weight:600;line-height:1.05;color:var(--red)}
-.winner .who em{display:block;font-size:.45em;font-style:italic;font-weight:400;color:var(--ink-2);margin-top:6px}
+.winner .who em{display:block;font-size:.45em;font-style:normal;font-weight:300;color:var(--ink-2);margin-top:6px}
 .confirm{display:flex;flex-direction:column;gap:12px;padding:16px 0;border-top:1px solid var(--ink);border-bottom:1px solid var(--rule)}
 .confirm .btn.danger{background:var(--red);color:#fff}
 .empty{padding:22px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);color:var(--ink-2)}
