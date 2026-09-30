@@ -198,6 +198,14 @@ tfoot td:first-child{font-family:var(--ui);font-size:.68rem;text-transform:upper
 .confirm{display:flex;flex-direction:column;gap:12px;padding:16px 0;border-top:1px solid var(--ink);border-bottom:1px solid var(--rule)}
 .confirm .btn.danger{background:var(--red);color:#fff}
 .empty{padding:22px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);color:var(--ink-2)}
+.rank[data-me]{cursor:pointer;-webkit-user-select:none;user-select:none}
+.rank.me{background:var(--wash);margin:0 -20px;padding-left:20px;padding-right:20px;box-shadow:inset 3px 0 0 var(--ink)}
+.you{font-size:.62rem;text-transform:uppercase;letter-spacing:.14em;font-weight:500;background:var(--ink);color:var(--paper);border-radius:4px;padding:2px 6px;margin-left:8px;vertical-align:3px}
+th.me{color:var(--ink)}
+td.me{background:var(--wash);font-weight:600}
+tfoot td.me{background:var(--wash)}
+.bids span.me{font-weight:600}
+.bids span.me b{text-decoration:underline;text-underline-offset:4px}
 .comment{gap:8px;padding:0 0 16px;margin-top:-12px;border-bottom:1px solid var(--rule)}
 .comment .cl{color:var(--ink)}
 .comment p{font-family:var(--display);font-weight:400;font-size:1.2rem;line-height:1.3;letter-spacing:-.01em;text-wrap:pretty}
@@ -228,6 +236,8 @@ const GID=MODE==='board'?VIEW_ID:gameId();
 const TOPIC='bondebridge-'+GID;
 const BOARD_URL=location.origin+location.pathname+'?g='+GID;
 const load=()=>{try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):null}catch(e){return null}};
+let ME=null;try{ME=localStorage.getItem(KEY+'-me')}catch(e){}
+const meIdx=()=>MODE==='board'&&ME!==null?S.players.indexOf(ME):-1;
 const save=()=>{if(MODE==='board')return;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 
 const DEMO={phase:'setup',players:['Ola','Kari','Per','Lise'],
@@ -373,12 +383,14 @@ function doneView(){
 
 function logView(){
   if(!S.rounds.length)return `<section><h2>Poengblokka</h2><p class="empty">Rundene føres her når de er lagret.</p></section>`;
-  const t=totals(),manual=S.settings.scoring==='manual',ro=MODE==='board';
+  const t=totals(),manual=S.settings.scoring==='manual',ro=MODE==='board',me=meIdx();
+  const cols=S.players.map((_,i)=>i);if(me>=0){cols.splice(me,1);cols.unshift(me)}
+  const mc=i=>i===me?' me':'';
   return `<section><div class="head"><h2>Poengblokka</h2>${ro?(manual?'':'<span class="note">meldt / tatt</span>'):'<span class="note">Trykk en rad for å rette</span>'}</div>
-  <div class="pad"><table><thead><tr><th>Runde</th>${S.players.map(p=>`<th>${esc(p)}</th>`).join('')}</tr></thead>
-  <tbody>${S.rounds.map((r,ri)=>`<tr ${ro?'':`data-edit="${ri}" tabindex="0"`}><td><span class="rd">${ri+1}</span><span class="cd">${r.cards} kort</span></td>${r.e.map(e=>{
-    const hit=!manual&&e.b===e.t;return `<td class="${manual?'':hit?'hit':'miss'}">${e.p}${manual?'':`<span class="bt">${e.b}/${e.t}</span>`}</td>`}).join('')}</tr>`).join('')}</tbody>
-  <tfoot><tr><td>Sum</td>${t.map(v=>`<td>${v}</td>`).join('')}</tr></tfoot></table></div></section>`;
+  <div class="pad"><table><thead><tr><th>Runde</th>${cols.map(i=>`<th class="${mc(i)}">${esc(S.players[i])}</th>`).join('')}</tr></thead>
+  <tbody>${S.rounds.map((r,ri)=>`<tr ${ro?'':`data-edit="${ri}" tabindex="0"`}><td><span class="rd">${ri+1}</span><span class="cd">${r.cards} kort</span></td>${cols.map(i=>{const e=r.e[i];
+    const hit=!manual&&e.b===e.t;return `<td class="${manual?'':hit?'hit':'miss'}${mc(i)}">${e.p}${manual?'':`<span class="bt">${e.b}/${e.t}</span>`}</td>`}).join('')}</tr>`).join('')}</tbody>
+  <tfoot><tr><td>Sum</td>${cols.map(i=>`<td class="${mc(i)}">${t[i]}</td>`).join('')}</tr></tfoot></table></div></section>`;
 }
 
 function footerView(){
@@ -501,14 +513,14 @@ function boardView(){
   let now='';
   if(S.phase==='done')now=doneView();
   else if(S.phase==='play'&&n){
-    const bids=n.bids?`<div class="bids">${n.bids.map((b,i)=>`<span>${esc(S.players[i])}<b>${b}</b></span>`).join('')}</div><div class="tally"><span>Meldt <b>${n.bids.reduce((a,b)=>a+b,0)}</b> av ${n.cards}</span></div>`
+    const bids=n.bids?`<div class="bids">${n.bids.map((b,i)=>`<span class="${i===meIdx()?'me':''}">${esc(S.players[i])}<b>${b}</b></span>`).join('')}</div><div class="tally"><span>Meldt <b>${n.bids.reduce((a,b)=>a+b,0)}</b> av ${n.cards}</span></div>`
       :'<p class="note">Venter på meldingene.</p>';
     now=`<section><div class="round-top">${playCard(n.cards,n.round)}<div class="round-meta"><div><div class="sc">Runde ${n.round+1} av ${schedule().length}</div><div class="big">${n.cards} kort <em>· ${esc(S.players[n.dealer]||'')} gir</em></div></div>${course(n.round)}</div></div>${bids}</section>`;
   }
   const list=`<section><div class="head"><h2>Stilling</h2><span class="sc">${S.rounds.length} ${S.rounds.length===1?'runde':'runder'}</span></div>
     <div class="ranks">${order.map((i,rank)=>{const lead=played&&t[i]===top;
       const last=played?S.rounds[S.rounds.length-1].e[i].p:null;
-      return `<div class="rank ${lead?'first':''} ${played&&rk[i]<=3?'p'+rk[i]:''}">${medal(rk[i],played)}<span class="nm">${esc(S.players[i])} ${moveTag(mv[i])}<span class="sub">${!played?'&nbsp;':(lead?'leder':signed(t[i]-top)+' bak')+` · sist ${signed(last)}`}</span></span><span class="tt">${t[i]}</span></div>`}).join('')}</div></section>`;
+      return `<div class="rank ${lead?'first':''} ${played&&rk[i]<=3?'p'+rk[i]:''} ${i===meIdx()?'me':''}" data-me="${esc(S.players[i])}" role="button" tabindex="0" aria-pressed="${i===meIdx()}">${medal(rk[i],played)}<span class="nm">${esc(S.players[i])}${i===meIdx()?'<span class="you">deg</span>':''} ${moveTag(mv[i])}<span class="sub">${!played?'&nbsp;':(lead?'leder':signed(t[i]-top)+' bak')+` · sist ${signed(last)}`}</span></span><span class="tt">${t[i]}</span></div>`}).join('')}</div><p class="note">${meIdx()>=0?'Trykk på navnet ditt igjen for å fjerne markeringen.':'Trykk på navnet ditt for å markere deg selv.'}</p></section>`;
   return head+commentView()+now+list+logView();
 }
 // compact wire format keeps a 20-round game well under ntfy's 4 KB message limit
@@ -559,8 +571,13 @@ function connect(){
 }
 
 // ---- events ----
+function toggleMe(name){
+  ME=ME===name?null:name;
+  try{ME===null?localStorage.removeItem(KEY+'-me'):localStorage.setItem(KEY+'-me',ME)}catch(e){}
+  render();
+}
 document.addEventListener('click',ev=>{
-  if(MODE==='board')return;
+  if(MODE==='board'){const m=ev.target.closest('[data-me]');if(m)toggleMe(m.dataset.me);return}
   const b=ev.target.closest('button,[data-edit]');if(!b||b.disabled||b.getAttribute('aria-disabled')==='true')return;
   const a=b.dataset.act;
   if(a==='showShare'||a==='hideShare'){showShare=a==='showShare';render();return}
@@ -630,7 +647,7 @@ document.addEventListener('change',ev=>{
   else S.settings[k]=t.value;
   commit();
 });
-document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target.dataset&&ev.target.dataset.edit!==undefined)ev.target.click()});
+document.addEventListener('keydown',ev=>{if(MODE==='board'&&(ev.key==='Enter'||ev.key===' ')&&ev.target.dataset&&ev.target.dataset.me!==undefined){ev.preventDefault();toggleMe(ev.target.dataset.me);return}if(ev.key==='Enter'&&ev.target.dataset&&ev.target.dataset.edit!==undefined)ev.target.click()});
 
 function selectLink(){const el=$('#boardlink');if(!el)return;const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r)}
 function commit(){save();schedulePush();
