@@ -22,16 +22,17 @@
   --ink:#141414;        /* black ink */
   --ink-2:#6a6b66;      /* secondary ink */
   --rule:#dcdcd6;       /* hairlines */
-  --red:#b3121c;        /* card red, the only accent */
+  --red:#b3121c;        /* card red: dealer, errors */
+  --lead:#17784a;       /* card-table green: whoever leads */
   --wash:#ecece7;       /* pressed / subtle fill */
   --display:"Funnel Display","Schibsted Grotesk",system-ui,-apple-system,sans-serif;
   --ui:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --paper:#0f1116; --stock:#171a21; --ink:#ecebe6; --ink-2:#9b9ca3; --rule:#2b2f38; --red:#f0565c; --wash:#1f232c; color-scheme:dark}}
+  --paper:#0f1116; --stock:#171a21; --ink:#ecebe6; --ink-2:#9b9ca3; --rule:#2b2f38; --red:#f0565c; --lead:#4fc98a; --wash:#1f232c; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --paper:#0f1116; --stock:#171a21; --ink:#ecebe6; --ink-2:#9b9ca3; --rule:#2b2f38; --red:#f0565c; --wash:#1f232c; color-scheme:dark}
+  --paper:#0f1116; --stock:#171a21; --ink:#ecebe6; --ink-2:#9b9ca3; --rule:#2b2f38; --red:#f0565c; --lead:#4fc98a; --wash:#1f232c; color-scheme:dark}
 
 *{box-sizing:border-box}
 html{touch-action:manipulation;-webkit-tap-highlight-color:transparent;background:var(--paper);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -84,7 +85,7 @@ header{padding-top:28px;display:flex;justify-content:space-between;align-items:f
 .idx .nm{font-size:.78rem;font-weight:500;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis}
 .idx .tot{font-family:var(--display);font-weight:700;letter-spacing:-.02em;font-size:2rem;line-height:1.05}
 .idx .gap{font-size:.72rem;color:var(--ink-2)}
-.idx.lead .tot,.idx.lead .nm{color:var(--red)}
+.idx.lead .tot,.idx.lead .nm{color:var(--lead)}
 
 /* the round card */
 .round-top{display:flex;gap:20px;align-items:stretch}
@@ -176,11 +177,11 @@ tfoot td:first-child{font-family:var(--ui);font-size:.68rem;text-transform:upper
 .rank .nm{min-width:0;font-size:1.15rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rank .nm .sub{display:block;font-size:.8rem;font-weight:400;color:var(--ink-2)}
 .rank .tt{font-family:var(--display);font-weight:700;letter-spacing:-.02em;font-size:2.4rem;line-height:1}
-.rank.first .r,.rank.first .tt{color:var(--red)}
+.rank.first .r,.rank.first .tt{color:var(--lead)}
 .bids{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.9rem}
 .bids span b{font-family:var(--display);font-weight:600;font-size:1.1rem;margin-left:4px}
 .winner{text-align:center;align-items:center;padding:12px 0 4px;gap:6px}
-.winner .who{font-family:var(--display);font-size:2.6rem;font-weight:600;line-height:1.05;color:var(--red)}
+.winner .who{font-family:var(--display);font-size:2.6rem;font-weight:600;line-height:1.05;color:var(--lead)}
 .winner .who em{display:block;font-size:.45em;font-style:normal;font-weight:300;color:var(--ink-2);margin-top:6px}
 .confirm{display:flex;flex-direction:column;gap:12px;padding:16px 0;border-top:1px solid var(--ink);border-bottom:1px solid var(--rule)}
 .confirm .btn.danger{background:var(--red);color:#fff}
