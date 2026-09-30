@@ -527,7 +527,10 @@ document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target.dataset&
 
 function selectLink(){const el=$('#boardlink');if(!el)return;const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r)}
 function commit(){save();schedulePush();
-  const f=document.activeElement&&document.activeElement.id;
+  const ae=document.activeElement;
+  // never re-focus a <select>: on iOS focusing one re-opens its picker right after a choice
+  const f=ae&&ae.id&&ae.tagName!=='SELECT'?ae.id:null;
+  if(ae&&ae.tagName==='SELECT')ae.blur();
   render();
   if(f){const el=document.getElementById(f);el&&el.focus({preventScroll:true})}
 }
