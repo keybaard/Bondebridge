@@ -115,7 +115,9 @@ header{padding-top:28px;display:flex;justify-content:space-between;align-items:f
 .pname .sub .miss{color:var(--ink-2);font-weight:400;text-decoration:line-through;text-decoration-color:var(--red)}
 .step{display:flex;align-items:center;gap:6px}
 .step button{width:42px;height:42px;border-radius:50%;box-shadow:inset 0 0 0 1px var(--rule);font-size:1.25rem;line-height:1;color:var(--ink)}
-.step button:active:not(:disabled){background:var(--wash)}
+.step button:active:not([aria-disabled]){background:var(--wash)}
+.step button[aria-disabled="true"]{opacity:.3;cursor:default}
+.step,.prow,.plist{touch-action:manipulation}
 .step output{min-width:36px;text-align:center;font-family:var(--display);font-weight:600;font-size:1.7rem;line-height:1}
 .step input{width:64px;text-align:center;font-family:var(--display);font-weight:600;font-size:1.4rem;padding:6px 0}
 .tally{display:flex;justify-content:space-between;gap:12px;font-size:.9rem;color:var(--ink-2)}
@@ -141,10 +143,13 @@ tfoot td:first-child{font-family:var(--ui);font-size:.68rem;text-transform:upper
 
 /* setup */
 .players{display:flex;flex-direction:column}
-.plrow{display:grid;grid-template-columns:2rem 1fr 40px;align-items:center;gap:6px}
+.plrow{display:grid;grid-template-columns:1.6rem 1fr 38px 38px 38px;align-items:center;gap:2px}
 .plrow .seat{font-family:var(--display);font-weight:600;color:var(--ink-2)}
-.plrow button{height:40px;color:var(--ink-2);font-size:1.3rem}
-.plrow button:hover{color:var(--red)}
+.plrow button{height:40px;color:var(--ink-2);font-size:1.2rem;border-radius:50%}
+.plrow button.mv{font-size:1rem}
+.plrow button[aria-disabled="true"]{opacity:.2;cursor:default}
+.plrow button[data-rm]:hover{color:var(--red)}
+.plrow button.mv:hover:not([aria-disabled]){color:var(--ink)}
 .opts{display:flex;flex-direction:column;border-top:1px solid var(--rule)}
 .opt{display:grid;grid-template-columns:1fr minmax(0,55%);gap:12px;align-items:center;padding:6px 0;border-bottom:1px solid var(--rule)}
 .opt>label,.opt>span{font-size:.95rem}
@@ -245,8 +250,8 @@ const $=s=>document.querySelector(s);
 const SUITS=['♠','♥','♣','♦'];
 const signed=p=>(p>0?'+':p<0?'−':'')+Math.abs(p);
 function stepper(id,val,min,max,label){
-  return `<div class="step"><button type="button" data-step="${id}" data-d="-1" aria-label="Én mindre for ${label}" ${val<=min?'disabled':''}>−</button>
-  <output aria-live="polite">${val}</output><button type="button" data-step="${id}" data-d="1" aria-label="Én mer for ${label}" ${val>=max?'disabled':''}>+</button></div>`;
+  return `<div class="step"><button type="button" data-step="${id}" data-d="-1" aria-label="Én mindre for ${label}" ${val<=min?'aria-disabled="true"':''}>−</button>
+  <output aria-live="polite">${val}</output><button type="button" data-step="${id}" data-d="1" aria-label="Én mer for ${label}" ${val>=max?'aria-disabled="true"':''}>+</button></div>`;
 }
 function playCard(cards,ri){
   const s=SUITS[ri%4],red=s==='♥'||s==='♦';
@@ -273,9 +278,9 @@ function setupView(){
   return `<header><h1>Bondebridge<em>poengblokk</em></h1></header>
   <section>
     <div class="head"><h2>Spillere</h2><span class="sc">${n} ved bordet</span></div>
-    <div class="players">${S.players.map((p,i)=>`<div class="plrow"><span class="seat">${i+1}</span><input type="text" id="pl${i}" data-pl="${i}" value="${esc(p)}" placeholder="Navn" autocomplete="off" aria-label="Spiller ${i+1}"><button type="button" data-rm="${i}" aria-label="Fjern ${esc(p||'spiller '+(i+1))}">×</button></div>`).join('')}</div>
+    <div class="players">${S.players.map((p,i)=>`<div class="plrow"><span class="seat">${i+1}</span><input type="text" id="pl${i}" data-pl="${i}" value="${esc(p)}" placeholder="Navn" autocomplete="off" aria-label="Spiller ${i+1}"><button type="button" class="mv" data-mv="${i}" data-d="-1" aria-label="Flytt ${esc(p||'spiller '+(i+1))} opp" ${i===0?'aria-disabled="true"':''}>↑</button><button type="button" class="mv" data-mv="${i}" data-d="1" aria-label="Flytt ${esc(p||'spiller '+(i+1))} ned" ${i===S.players.length-1?'aria-disabled="true"':''}>↓</button><button type="button" data-rm="${i}" aria-label="Fjern ${esc(p||'spiller '+(i+1))}">×</button></div>`).join('')}</div>
     <div class="links"><button class="link" data-act="addp" ${S.players.length>=8?'disabled':''}>Legg til spiller</button></div>
-    <p class="note">Skriv dem i rekkefølgen dere sitter. Giveren går videre med klokka hver runde.</p>
+    <p class="note">Sett dem i rekkefølgen dere sitter, med pilene. Giveren går videre med klokka hver runde.</p>
   </section>
   <section>
     <h2>Regler</h2>
@@ -449,13 +454,19 @@ function connect(){
 // ---- events ----
 document.addEventListener('click',ev=>{
   if(MODE==='board')return;
-  const b=ev.target.closest('button,[data-edit]');if(!b||b.disabled)return;
+  const b=ev.target.closest('button,[data-edit]');if(!b||b.disabled||b.getAttribute('aria-disabled')==='true')return;
   const a=b.dataset.act;
   if(a==='showShare'||a==='hideShare'){showShare=a==='showShare';render();return}
   if(a==='copy'){
     const done=()=>{const c=$('#copybtn');if(c)c.textContent='Kopiert'};
     try{navigator.clipboard.writeText(BOARD_URL).then(done,selectLink)}catch(e){selectLink()}
     return;
+  }
+  if(b.dataset.mv!==undefined){
+    const i=+b.dataset.mv,j=i+(+b.dataset.d);if(j<0||j>=S.players.length)return;
+    const P=S.players;[P[i],P[j]]=[P[j],P[i]];
+    const fd=S.settings.firstDealer;if(fd===i)S.settings.firstDealer=j;else if(fd===j)S.settings.firstDealer=i; // first dealer follows the person
+    commit();const nb=document.querySelector(`[data-mv="${j}"][data-d="${b.dataset.d}"]`);nb&&nb.getAttribute('aria-disabled')!=='true'&&nb.focus({preventScroll:true});return;
   }
   if(b.dataset.rm!==undefined){S.players.splice(+b.dataset.rm,1);if(S.settings.firstDealer>=S.players.length)S.settings.firstDealer=0;return commit()}
   if(b.dataset.step){
