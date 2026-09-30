@@ -6,126 +6,184 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Bondebridge">
-<meta name="theme-color" content="#1f5a43">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231f5a43'/%3E%3Ctext x='50' y='72' font-size='64' text-anchor='middle' fill='%23fff'%3E%E2%99%A0%3C/text%3E%3C/svg%3E">
-<title>Bondebridge-blokka</title>
+<meta name="theme-color" content="#f4f4f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1116" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='18' y='6' width='64' height='88' rx='9' fill='%23fff' stroke='%23141414' stroke-width='4'/%3E%3Ctext x='50' y='66' font-size='44' text-anchor='middle' fill='%23b3121c'%3E%E2%99%A6%3C/text%3E%3C/svg%3E">
+<title>Bondebridge</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..800;1,6..96,400..600&family=Schibsted+Grotesk:wght@400;500;700&display=swap">
 <style>
-/* Layout: one column scorepad; standings pinned on top, current round below, round log as a ruled sheet */
+/* Layout: one narrow column printed like card stock in two inks (black + card red).
+   Standings pinned as card-corner indices; the round is a small playing card; the log is a ruled score pad with a double-ruled sum. */
 :root{
-  --bg:#eef1ee; --paper:#ffffff; --ink:#1d2a24; --muted:#5f6f67; --line:#d5ddd8;
-  --felt:#1f5a43; --felt-ink:#ffffff; --red:#b3262f; --good:#1f7a4d; --warn:#9a6200;
-  --display:"Bricolage Grotesque",system-ui,sans-serif;
-  --body:"Atkinson Hyperlegible",system-ui,-apple-system,sans-serif;
+  --paper:#f4f4f1;      /* page */
+  --stock:#ffffff;      /* card stock surfaces */
+  --ink:#141414;        /* black ink */
+  --ink-2:#6a6b66;      /* secondary ink */
+  --rule:#dcdcd6;       /* hairlines */
+  --red:#b3121c;        /* card red, the only accent */
+  --wash:#ecece7;       /* pressed / subtle fill */
+  --display:"Bodoni Moda","Didot","Bodoni 72",Georgia,serif;
+  --ui:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0f1714; --paper:#17221d; --ink:#e7eee9; --muted:#9aaba2; --line:#2a3a33;
-  --felt:#2f7d5e; --felt-ink:#ffffff; --red:#ef6a70; --good:#5fcf95; --warn:#e9b04c; color-scheme:dark}}
+  --paper:#0f1116; --stock:#171a21; --ink:#ecebe6; --ink-2:#9b9ca3; --rule:#2b2f38; --red:#f0565c; --wash:#1f232c; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0f1714; --paper:#17221d; --ink:#e7eee9; --muted:#9aaba2; --line:#2a3a33;
-  --felt:#2f7d5e; --felt-ink:#ffffff; --red:#ef6a70; --good:#5fcf95; --warn:#e9b04c; color-scheme:dark}
+  --paper:#0f1116; --stock:#171a21; --ink:#ecebe6; --ink-2:#9b9ca3; --rule:#2b2f38; --red:#f0565c; --wash:#1f232c; color-scheme:dark}
+
 *{box-sizing:border-box}
-html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bg)}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.4;padding:0 16px 40px;font-variant-numeric:tabular-nums;-webkit-text-size-adjust:100%}
+html{background:var(--paper);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:16px;line-height:1.45;
+  padding:0 20px 56px;-webkit-text-size-adjust:100%;font-variant-numeric:lining-nums tabular-nums}
 [hidden]{display:none!important}
-.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
-h1,h2{font-family:var(--display);margin:0;text-wrap:balance}
-h1{font-size:1.7rem;font-weight:800;letter-spacing:-.01em}
-h2{font-size:1.15rem;font-weight:600}
-.lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
-button{font:inherit;cursor:pointer;border:0;border-radius:10px}
-button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--felt);outline-offset:2px}
-.btn{background:var(--felt);color:var(--felt-ink);padding:14px 18px;font-weight:700;font-size:1rem;width:100%}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
-.btn.small{width:auto;padding:8px 12px;font-size:.9rem}
-.panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px}
-input[type=text],input[type=number],select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;width:100%;min-width:0}
-.row{display:flex;gap:8px;align-items:center}
-.row > *{min-width:0}
+.wrap{max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:36px}
+h1,h2{margin:0;font-weight:500;text-wrap:balance}
+h1{font-family:var(--display);font-size:2.6rem;line-height:1;letter-spacing:-.01em;font-weight:600}
+h1 em{font-style:italic;font-weight:400;color:var(--ink-2);font-size:.55em;display:block;margin-top:8px;letter-spacing:0}
+h2{font-family:var(--display);font-size:1.45rem;font-weight:600;letter-spacing:-.005em}
+.sc{font-size:.7rem;text-transform:uppercase;letter-spacing:.14em;font-weight:500;color:var(--ink-2)}
+.red{color:var(--red)}
+.num{font-family:var(--display);font-weight:600}
+p{margin:0}
+.note{font-size:.85rem;color:var(--ink-2)}
+section{display:flex;flex-direction:column;gap:14px}
+.head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+
+/* controls */
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0}
+button:disabled{cursor:not-allowed;opacity:.35}
+:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+.btn{display:block;width:100%;padding:16px 20px;border-radius:8px;background:var(--ink);color:var(--paper);font-weight:500;font-size:1rem;letter-spacing:.01em;text-align:center}
+.btn.line{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.btns{display:flex;gap:10px}.btns>*{flex:1}
+.btns .btn.line{flex:0 0 auto;width:auto}
+.link{font-size:.9rem;color:var(--ink);text-decoration:underline;text-decoration-color:var(--rule);text-underline-offset:4px;padding:6px 0}
+.link:hover{text-decoration-color:var(--ink)}
+.links{display:flex;gap:22px;flex-wrap:wrap;align-items:center}
+input[type=text],input[type=number],select{font:inherit;color:var(--ink);background:transparent;border:0;border-bottom:1px solid var(--rule);border-radius:0;padding:10px 0;width:100%;min-width:0;-webkit-appearance:none;appearance:none}
+input[type=text]:focus,select:focus{border-bottom-color:var(--ink);outline:none}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--ink-2) 50%),linear-gradient(135deg,var(--ink-2) 50%,transparent 50%);background-position:calc(100% - 10px) 55%,calc(100% - 5px) 55%;background-size:5px 5px;background-repeat:no-repeat;padding-right:24px}
+select option{color:#141414;background:#fff}
 
 /* header */
-header{padding-top:16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
-.suits{color:var(--red);font-size:1.1rem;letter-spacing:.15em}
+header{padding-top:28px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.status{display:inline-flex;align-items:center;gap:7px;font-size:.78rem;color:var(--ink-2);white-space:nowrap}
+.status i{width:7px;height:7px;border-radius:50%;background:var(--rule)}
+.status.on i{background:var(--ink)} .status.off i{background:var(--red)}
+.status.on.live i{animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.25}}
 
-/* standings */
-.standings{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:8px;margin:0 -16px;padding-inline:16px;border-bottom:1px solid var(--line)}
-.st-list{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
-.st-list::-webkit-scrollbar{display:none}
-.chip{flex:0 0 auto;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 12px;min-width:84px;display:flex;flex-direction:column;gap:2px}
-.chip.lead{background:var(--felt);color:var(--felt-ink);border-color:var(--felt)}
-.chip .n{font-size:.85rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
-.chip .t{font-family:var(--display);font-weight:800;font-size:1.5rem;line-height:1}
-.chip .d{font-size:.75rem;opacity:.75}
+/* standings: card-corner indices */
+.standings{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);margin:0 -20px;padding:14px 20px 12px;border-bottom:1px solid var(--rule)}
+.idxs{display:flex;gap:26px;overflow-x:auto;scrollbar-width:none}
+.idxs::-webkit-scrollbar{display:none}
+.idx{flex:0 0 auto;display:flex;flex-direction:column;min-width:52px}
+.idx .nm{font-size:.78rem;font-weight:500;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.idx .tot{font-family:var(--display);font-weight:600;font-size:2rem;line-height:1.05}
+.idx .gap{font-size:.72rem;color:var(--ink-2)}
+.idx.lead .tot,.idx.lead .nm{color:var(--red)}
 
-/* round */
-.roundhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
-.cards{font-family:var(--display);font-weight:800;font-size:2.4rem;line-height:1}
-.cards small{font-family:var(--body);font-size:.9rem;font-weight:400;color:var(--muted);margin-left:4px}
-.plist{display:flex;flex-direction:column}
-.prow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
-.prow:first-child{border-top:0}
-.pname{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pname .sub{display:block;font-weight:400;font-size:.8rem;color:var(--muted)}
-.dealer{display:inline-block;font-size:.7rem;background:var(--red);color:#fff;border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:2px;font-weight:700}
-.step{display:flex;align-items:center;gap:4px}
-.step button{width:44px;height:44px;background:var(--bg);color:var(--ink);border:1px solid var(--line);font-size:1.3rem;font-weight:700}
-.step output{min-width:40px;text-align:center;font-family:var(--display);font-weight:800;font-size:1.4rem}
-.step input{width:72px;text-align:center;padding:10px 4px}
-.sum{display:flex;justify-content:space-between;gap:8px;font-size:.95rem;padding:10px 12px;border-radius:10px;background:var(--bg)}
-.sum.ok{color:var(--good)} .sum.bad{color:var(--red)} .sum.warn{color:var(--warn)}
-.pts{font-weight:700}
-.pts.hit{color:var(--good)} .pts.miss{color:var(--red)}
+/* the round card */
+.round-top{display:flex;gap:20px;align-items:stretch}
+.pcard{position:relative;flex:0 0 auto;width:78px;height:110px;border-radius:9px;background:var(--stock);box-shadow:0 0 0 1px var(--rule),0 6px 16px -10px rgba(0,0,0,.35);color:var(--ink)}
+.pcard.r{color:var(--red)}
+.pcard .ix{position:absolute;display:flex;flex-direction:column;align-items:center;line-height:.9;font-family:var(--display);font-weight:600;font-size:1.25rem}
+.pcard .ix i{font-style:normal;font-size:.8rem;margin-top:2px}
+.pcard .tl{top:7px;left:8px}.pcard .br{bottom:7px;right:8px;transform:rotate(180deg)}
+.pcard .pip{position:absolute;inset:0;display:grid;place-items:center;font-size:2.1rem}
+.round-meta{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;gap:10px}
+.round-meta .big{font-family:var(--display);font-size:1.5rem;font-weight:600;line-height:1.1}
+.round-meta .big em{font-weight:400;color:var(--ink-2)}
+.course{display:flex;align-items:flex-end;gap:2px;height:30px}
+.course span{flex:1;background:var(--rule);border-radius:1px;min-height:3px}
+.course span.done{background:var(--ink-2)}
+.course span.now{background:var(--red)}
+.stages{display:flex;gap:18px;font-size:.85rem}
+.stages span{color:var(--ink-2);padding-bottom:3px}
+.stages span.on{color:var(--ink);box-shadow:inset 0 -1.5px 0 var(--ink)}
 
-/* log */
-.logwrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--paper)}
-table{border-collapse:collapse;width:100%;font-size:.9rem}
-th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
-th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--paper)}
-thead th{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+/* player rows */
+.plist{display:flex;flex-direction:column;border-top:1px solid var(--rule)}
+.prow{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--rule)}
+.pname{min-width:0;font-weight:500;font-size:1.05rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pname .tag{font-size:.64rem;text-transform:uppercase;letter-spacing:.14em;color:var(--red);margin-left:8px;vertical-align:2px;font-weight:500}
+.pname .sub{display:block;font-size:.8rem;font-weight:400;color:var(--ink-2)}
+.pname .sub b{font-weight:500;color:var(--ink)}
+.pname .sub .miss{color:var(--ink-2);font-weight:400;text-decoration:line-through;text-decoration-color:var(--red)}
+.step{display:flex;align-items:center;gap:6px}
+.step button{width:42px;height:42px;border-radius:50%;box-shadow:inset 0 0 0 1px var(--rule);font-size:1.25rem;line-height:1;color:var(--ink)}
+.step button:active:not(:disabled){background:var(--wash)}
+.step output{min-width:36px;text-align:center;font-family:var(--display);font-weight:600;font-size:1.7rem;line-height:1}
+.step input{width:64px;text-align:center;font-family:var(--display);font-weight:600;font-size:1.4rem;padding:6px 0}
+.tally{display:flex;justify-content:space-between;gap:12px;font-size:.9rem;color:var(--ink-2)}
+.tally b{color:var(--ink);font-weight:500}
+.tally.bad,.tally.bad b{color:var(--red)}
+
+/* score pad */
+.pad{overflow-x:auto;margin:0 -20px;padding:0 20px}
+table{border-collapse:collapse;width:100%;font-size:.95rem}
+th,td{padding:9px 8px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;padding-left:0;position:sticky;left:0;background:var(--paper)}
+thead th{font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;font-weight:500;color:var(--ink-2);border-bottom:1px solid var(--ink);max-width:90px;overflow:hidden;text-overflow:ellipsis}
+tbody td{border-bottom:1px solid var(--rule)}
 tbody tr[data-edit]{cursor:pointer}
-tbody tr[data-edit]:hover td{background:var(--bg)}
-td .bt{display:block;font-size:.72rem;color:var(--muted)}
-td.hit{color:var(--good);font-weight:700} td.miss{color:var(--red)}
-tfoot td{font-weight:800;font-family:var(--display);font-size:1.05rem;border-bottom:0}
-.hint{font-size:.85rem;color:var(--muted);margin:0}
+tbody tr[data-edit]:hover td{background:var(--wash)}
+td .rd{font-family:var(--display);font-weight:600}
+td .cd{font-size:.75rem;color:var(--ink-2);margin-left:6px}
+td.hit{font-weight:500}
+td.miss{color:var(--ink-2)}
+td .bt{display:block;font-size:.7rem;color:var(--ink-2);font-weight:400}
+tfoot td{border-top:3px double var(--ink);font-family:var(--display);font-weight:600;font-size:1.3rem;padding-top:10px}
+tfoot td:first-child{font-family:var(--ui);font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;font-weight:500;color:var(--ink-2);vertical-align:middle}
 
 /* setup */
-.plrow{display:flex;gap:8px}
-.plrow button{flex:0 0 44px;background:var(--bg);color:var(--red);border:1px solid var(--line);font-size:1.2rem}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media (max-width:420px){.grid2{grid-template-columns:1fr}}
-.field{display:flex;flex-direction:column;gap:6px}
-.confirm{background:var(--bg);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
-.winner{text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
-.winner .big{font-family:var(--display);font-weight:800;font-size:2rem}
-.tabs{display:flex;gap:6px}
-.tabs button{flex:1;padding:10px;background:var(--bg);color:var(--ink);border:1px solid var(--line);font-weight:700}
-.tabs button[aria-pressed="true"]{background:var(--felt);color:var(--felt-ink);border-color:var(--felt)}
+.players{display:flex;flex-direction:column}
+.plrow{display:grid;grid-template-columns:2rem 1fr 40px;align-items:center;gap:6px}
+.plrow .seat{font-family:var(--display);font-weight:600;color:var(--ink-2)}
+.plrow button{height:40px;color:var(--ink-2);font-size:1.3rem}
+.plrow button:hover{color:var(--red)}
+.opts{display:flex;flex-direction:column;border-top:1px solid var(--rule)}
+.opt{display:grid;grid-template-columns:1fr minmax(0,55%);gap:12px;align-items:center;padding:6px 0;border-bottom:1px solid var(--rule)}
+.opt>label,.opt>span{font-size:.95rem}
+.opt select{border-bottom:0;text-align:right;text-align-last:right}
+.opt.sw{grid-template-columns:1fr auto;padding:12px 0}
+.opt.sw small{display:block;color:var(--ink-2);font-size:.8rem;line-height:1.35;margin-top:2px}
+.switch{position:relative;width:46px;height:28px;flex:0 0 auto}
+.switch input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:1;width:100%;height:100%}
+.switch i{pointer-events:none;position:absolute;inset:0;border-radius:14px;background:var(--rule);transition:background .15s}
+.switch i::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--stock);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.switch input:checked+i{background:var(--ink)}
+.switch input:checked+i::after{transform:translateX(18px)}
+.switch input:focus-visible+i{outline:2px solid var(--red);outline-offset:2px}
+
 /* share + board */
-.qrbox{background:#ffffff;padding:14px;border-radius:12px;align-self:center;line-height:0}
-.qrbox img,.qrbox canvas{width:220px;height:220px;max-width:100%}
-.linkline{display:flex;gap:8px;align-items:center}
-.linkline code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:.8rem;user-select:all}
-.status{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted)}
-.status i{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
-.status.on i{background:var(--good)} .status.off i{background:var(--red)}
-.board-now{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
-.bigtable{display:flex;flex-direction:column}
-.brow{display:grid;grid-template-columns:2rem 1fr auto;gap:10px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
-.brow:first-child{border-top:0}
-.brow .r{font-family:var(--display);font-weight:800;color:var(--muted);font-size:1.1rem}
-.brow .nm{font-weight:700;font-size:1.15rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.brow .nm .sub{display:block;font-weight:400;font-size:.8rem;color:var(--muted)}
-.brow .tt{font-family:var(--display);font-weight:800;font-size:2rem;line-height:1}
-.brow.first .r,.brow.first .tt{color:var(--felt)}
-details summary{cursor:pointer;font-weight:700}
-@media (prefers-reduced-motion:no-preference){.chip{transition:background .2s}}
+.qr{align-self:center;background:#fff;padding:16px;border-radius:10px;box-shadow:0 0 0 1px var(--rule);line-height:0}
+.qr img,.qr canvas{width:216px;height:216px;max-width:100%}
+.linkline{display:flex;gap:10px;align-items:center}
+.linkline code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;font-size:.8rem;color:var(--ink-2);border-bottom:1px solid var(--rule);padding:8px 0;user-select:all}
+.linkline .btn{width:auto;padding:10px 16px;font-size:.9rem}
+.ranks{display:flex;flex-direction:column;border-top:1px solid var(--ink)}
+.rank{display:grid;grid-template-columns:1.8rem 1fr auto;gap:12px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--rule)}
+.rank .r{font-family:var(--display);font-weight:600;color:var(--ink-2)}
+.rank .nm{min-width:0;font-size:1.15rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank .nm .sub{display:block;font-size:.8rem;font-weight:400;color:var(--ink-2)}
+.rank .tt{font-family:var(--display);font-weight:600;font-size:2.4rem;line-height:1}
+.rank.first .r,.rank.first .tt{color:var(--red)}
+.bids{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.9rem}
+.bids span b{font-family:var(--display);font-weight:600;font-size:1.1rem;margin-left:4px}
+.winner{text-align:center;align-items:center;padding:12px 0 4px;gap:6px}
+.winner .who{font-family:var(--display);font-size:2.6rem;font-weight:600;line-height:1.05;color:var(--red)}
+.winner .who em{display:block;font-size:.45em;font-style:italic;font-weight:400;color:var(--ink-2);margin-top:6px}
+.confirm{display:flex;flex-direction:column;gap:12px;padding:16px 0;border-top:1px solid var(--ink);border-bottom:1px solid var(--rule)}
+.confirm .btn.danger{background:var(--red);color:#fff}
+.empty{padding:22px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);color:var(--ink-2)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<div class="wrap" id="app"></div>
+<main class="wrap" id="app"></main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
@@ -136,12 +194,11 @@ const params=new URLSearchParams(location.search);
 const VIEW_ID=(params.get('g')||'').replace(/[^a-z0-9]/gi,'');
 let MODE=VIEW_ID?'board':'keeper';
 let SYNC=MODE==='board'?'wait':'idle';   // idle | wait | on | off
-let REMOTE=null;       // last snapshot received (board)
+let REMOTE=null;
 let showShare=false;
-// keeper's game id: random, kept on this phone so the QR code stays the same all evening
-function gameId(){
+function gameId(){ // random per phone, so the QR code stays the same all evening
   let id=null;try{id=localStorage.getItem(KEY+'-id')}catch(e){}
-  if(!id){const a='abcdefghijkmnpqrstuvwxyz23456789';id='';const r=crypto.getRandomValues(new Uint8Array(14));r.forEach(x=>id+=a[x%a.length]);try{localStorage.setItem(KEY+'-id',id)}catch(e){}}
+  if(!id){const a='abcdefghijkmnpqrstuvwxyz23456789';id='';crypto.getRandomValues(new Uint8Array(14)).forEach(x=>id+=a[x%a.length]);try{localStorage.setItem(KEY+'-id',id)}catch(e){}}
   return id;
 }
 const GID=MODE==='board'?VIEW_ID:gameId();
@@ -151,127 +208,221 @@ const load=()=>{try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):nul
 const save=()=>{if(MODE==='board')return;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 
 const DEMO={phase:'setup',players:['Ola','Kari','Per','Lise'],
-  settings:{maxCards:10,order:'down',scoring:'ten',dealerBlock:false,firstDealer:0},
+  settings:{maxCards:10,order:'down',scoring:'ten',dealerBlock:false,zeroFive:false,firstDealer:0},
   rounds:[],draft:null,editing:null,confirmNew:false};
 let S=load()||JSON.parse(JSON.stringify(DEMO));
+if(S.settings&&S.settings.zeroFive===undefined)S.settings.zeroFive=false;
 
 // ---- rules ----
 function schedule(){
-  const m=S.settings.maxCards, down=[],up=[];
+  const m=S.settings.maxCards,down=[],up=[];
   for(let c=m;c>=1;c--)down.push(c);
   for(let c=1;c<=m;c++)up.push(c);
   return S.settings.order==='down'?down.concat(up):up.concat(down);
 }
 function maxAllowed(n){return Math.max(1,Math.floor(52/Math.max(n,1)))}
-function score(bid,tricks,manual){
-  if(S.settings.scoring==='manual')return manual||0;
-  if(bid===tricks)return 10+tricks;
-  if(S.settings.scoring==='minus')return -Math.abs(bid-tricks);
+function score(bid,tricks,manual,cards){
+  const st=S.settings;
+  if(st.scoring==='manual')return manual||0;
+  if(bid===tricks){
+    if(st.zeroFive&&bid===0&&cards<=5)return 5;   // house rule: a made zero is only worth 5 once rounds are 5 cards or fewer
+    return 10+tricks;
+  }
+  if(st.scoring==='minus')return -Math.abs(bid-tricks);
   return 0;
 }
-function totals(){
-  const t=S.players.map(()=>0);
-  S.rounds.forEach(r=>r.e.forEach((e,i)=>t[i]+=e.p));
-  return t;
-}
+function totals(){const t=S.players.map(()=>0);S.rounds.forEach(r=>r.e.forEach((e,i)=>t[i]+=e.p));return t}
 function dealerFor(ri){return (S.settings.firstDealer+ri)%S.players.length}
 function newDraft(){
-  const ri=S.rounds.length, cards=schedule()[ri];
-  return {cards,stage:S.settings.scoring==='manual'?'tricks':'bids',
-    e:S.players.map(()=>({b:0,t:0,m:0}))};
+  const cards=schedule()[S.rounds.length];
+  return {cards,stage:S.settings.scoring==='manual'?'tricks':'bids',e:S.players.map(()=>({b:0,t:0,m:0}))};
 }
 
 // ---- helpers ----
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const $=s=>document.querySelector(s);
-function stepper(id,val,min,max){
-  return `<div class="step"><button type="button" data-step="${id}" data-d="-1" aria-label="Minus" ${val<=min?'disabled':''}>−</button>
-  <output>${val}</output><button type="button" data-step="${id}" data-d="1" aria-label="Pluss" ${val>=max?'disabled':''}>+</button></div>`;
+const SUITS=['♠','♥','♣','♦'];
+const signed=p=>(p>0?'+':p<0?'−':'')+Math.abs(p);
+function stepper(id,val,min,max,label){
+  return `<div class="step"><button type="button" data-step="${id}" data-d="-1" aria-label="Én mindre for ${label}" ${val<=min?'disabled':''}>−</button>
+  <output aria-live="polite">${val}</output><button type="button" data-step="${id}" data-d="1" aria-label="Én mer for ${label}" ${val>=max?'disabled':''}>+</button></div>`;
 }
+function playCard(cards,ri){
+  const s=SUITS[ri%4],red=s==='♥'||s==='♦';
+  return `<div class="pcard ${red?'r':''}" aria-hidden="true"><span class="ix tl">${cards}<i>${s}</i></span><span class="pip">${s}</span><span class="ix br">${cards}<i>${s}</i></span></div>`;
+}
+function course(ri){
+  const sch=schedule(),m=Math.max(...sch);
+  return `<div class="course" aria-hidden="true">${sch.map((c,i)=>`<span class="${i<ri?'done':i===ri?'now':''}" style="height:${Math.max(10,Math.round(c/m*100))}%"></span>`).join('')}</div>`;
+}
+function standingsOrder(){const t=totals();return {t,order:t.map((v,i)=>i).sort((a,b)=>t[b]-t[a])}}
 
-// ---- render ----
+// ---- views ----
 function render(){
   const app=$('#app');
   if(MODE==='board'){app.innerHTML=boardView();return}
   if(S.phase==='setup'){app.innerHTML=setupView()+shareView();drawQR();return}
-  app.innerHTML=standingsView()+ (S.phase==='done'?doneView():roundView()) + logView() + shareView() + footerView();
+  app.innerHTML=standingsView()+(S.phase==='done'?doneView():roundView())+logView()+shareView()+footerView();
   drawQR();
+}
+
+function setupView(){
+  const n=S.players.filter(p=>p.trim()).length,cap=maxAllowed(n),mc=Math.min(S.settings.maxCards,cap),s=S.settings;
+  const sw=(key,title,sub)=>`<div class="opt sw"><label for="o-${key}">${title}${sub?`<small>${sub}</small>`:''}</label><span class="switch"><input type="checkbox" id="o-${key}" data-set="${key}" ${s[key]?'checked':''}><i></i></span></div>`;
+  return `<header><h1>Bondebridge<em>poengblokk</em></h1></header>
+  <section>
+    <div class="head"><h2>Spillere</h2><span class="sc">${n} ved bordet</span></div>
+    <div class="players">${S.players.map((p,i)=>`<div class="plrow"><span class="seat">${i+1}</span><input type="text" id="pl${i}" data-pl="${i}" value="${esc(p)}" placeholder="Navn" autocomplete="off" aria-label="Spiller ${i+1}"><button type="button" data-rm="${i}" aria-label="Fjern ${esc(p||'spiller '+(i+1))}">×</button></div>`).join('')}</div>
+    <div class="links"><button class="link" data-act="addp" ${S.players.length>=8?'disabled':''}>Legg til spiller</button></div>
+    <p class="note">Skriv dem i rekkefølgen dere sitter. Giveren går videre med klokka hver runde.</p>
+  </section>
+  <section>
+    <h2>Regler</h2>
+    <div class="opts">
+      <div class="opt"><label for="mc">Flest kort</label><select id="mc" data-set="maxCards">${Array.from({length:cap},(_,i)=>i+1).reverse().map(c=>`<option ${c===mc?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div class="opt"><label for="ord">Rekkefølge</label><select id="ord" data-set="order"><option value="down" ${s.order==='down'?'selected':''}>${mc} ned til 1 og opp</option><option value="up" ${s.order==='up'?'selected':''}>1 opp til ${mc} og ned</option></select></div>
+      <div class="opt"><label for="sc">Poeng</label><select id="sc" data-set="scoring">
+        <option value="ten" ${s.scoring==='ten'?'selected':''}>10 + stikk, bom gir 0</option>
+        <option value="minus" ${s.scoring==='minus'?'selected':''}>10 + stikk, bom gir minus</option>
+        <option value="manual" ${s.scoring==='manual'?'selected':''}>Før poeng for hånd</option></select></div>
+      <div class="opt"><label for="fd">Første giver</label><select id="fd" data-set="firstDealer">${S.players.map((p,i)=>`<option value="${i}" ${i===s.firstDealer?'selected':''}>${esc(p||'Spiller '+(i+1))}</option>`).join('')}</select></div>
+      ${s.scoring==='manual'?'':sw('zeroFive','Nullmelding gir 5 poeng','Når runden har 5 kort eller færre, gir det å melde og klare 0 stikk 5 poeng i stedet for 10.')}
+      ${sw('dealerBlock','Giver kan ikke gå opp','Summen av meldingene får ikke bli lik antall kort.')}
+    </div>
+    <p class="note">${mc*2} runder. Med ${n||'?'} spillere går det maks ${cap} kort hver.</p>
+  </section>
+  <button class="btn" data-act="start" ${n<2?'disabled':''}>Start spillet</button>`;
+}
+
+function standingsView(){
+  const {t,order}=standingsOrder(),top=t[order[0]],played=S.rounds.length>0;
+  return `<div class="standings"><div class="idxs" aria-label="Stilling">${order.map(i=>{
+    const lead=played&&t[i]===top;
+    return `<div class="idx ${lead?'lead':''}"><span class="nm">${lead?'♦ ':''}${esc(S.players[i])}</span><span class="tot">${t[i]}</span><span class="gap">${!played?'&nbsp;':lead?'leder':signed(t[i]-top)}</span></div>`}).join('')}</div></div>`;
+}
+
+function roundView(){
+  const sch=schedule(),editing=S.editing!==null,ri=editing?S.editing:S.rounds.length;
+  const d=S.draft,cards=d.cards,dealer=dealerFor(ri),manual=S.settings.scoring==='manual';
+  const bidSum=d.e.reduce((a,e)=>a+e.b,0),trickSum=d.e.reduce((a,e)=>a+e.t,0);
+  const order=S.players.map((_,i)=>(dealer+1+i)%S.players.length); // left of the dealer bids first
+  const name=(i,sub)=>`<div class="pname">${esc(S.players[i])}${i===dealer?'<span class="tag">gir</span>':''}${sub?`<span class="sub">${sub}</span>`:''}</div>`;
+  let rows='',tally='',action='';
+  if(manual){
+    rows=order.map(i=>`<div class="prow">${name(i)}<div class="step"><button type="button" data-step="m${i}" data-d="-1" aria-label="Minus">−</button><input type="number" id="m${i}" data-man="${i}" value="${d.e[i].m}" inputmode="numeric" aria-label="Poeng for ${esc(S.players[i])}"><button type="button" data-step="m${i}" data-d="1" aria-label="Pluss">+</button></div></div>`).join('');
+    action=`<button class="btn" data-act="saveRound">${editing?'Lagre endringen':'Lagre runden'}</button>`;
+  }else if(d.stage==='bids'){
+    rows=order.map(i=>`<div class="prow">${name(i)}${stepper('b'+i,d.e[i].b,0,cards,esc(S.players[i]))}</div>`).join('');
+    const blocked=S.settings.dealerBlock&&bidSum===cards;
+    const txt=blocked?'Giveren må melde noe annet':bidSum>cards?`${bidSum-cards} over – noen må bomme`:bidSum<cards?`${cards-bidSum} under – noen får for mange`:'Går akkurat opp';
+    tally=`<div class="tally ${blocked?'bad':''}"><span>Meldt <b>${bidSum}</b> av ${cards}</span><span>${txt}</span></div>`;
+    action=`<button class="btn" data-act="toTricks" ${blocked?'disabled':''}>Spill runden</button>`;
+  }else{
+    rows=order.map(i=>{const e=d.e[i],p=score(e.b,e.t,0,cards),hit=e.b===e.t;
+      return `<div class="prow">${name(i,`meldte ${e.b} · ${hit?`<b>${signed(p)}</b>`:`<span class="miss">${signed(p)}</span>`}`)}${stepper('t'+i,e.t,0,cards,esc(S.players[i]))}</div>`}).join('');
+    const ok=trickSum===cards;
+    tally=`<div class="tally ${ok?'':'bad'}"><span>Stikk <b>${trickSum}</b> av ${cards}</span><span>${ok?'Stemmer':trickSum<cards?`${cards-trickSum} mangler`:`${trickSum-cards} for mange`}</span></div>`;
+    action=`<div class="btns"><button class="btn line" data-act="toBids" aria-label="Tilbake til meldinger">←</button><button class="btn" data-act="saveRound" ${ok?'':'disabled'}>${editing?'Lagre endringen':'Lagre runden'}</button></div>`;
+  }
+  const stages=manual?'':`<div class="stages"><span class="${d.stage==='bids'?'on':''}">Meldinger</span><span class="${d.stage==='tricks'?'on':''}">Stikk</span></div>`;
+  return `<section id="round">
+    <div class="round-top">${playCard(cards,ri)}
+      <div class="round-meta"><div><div class="sc">${editing?'Retter runde':'Runde'} ${ri+1} av ${sch.length}</div><div class="big">${cards} kort <em>· ${esc(S.players[dealer])} gir</em></div></div>
+      ${course(ri)}</div></div>
+    ${stages}
+    <div class="plist">${rows}</div>${tally}${action}
+    ${editing?'<div class="links"><button class="link" data-act="cancelEdit">Avbryt rettingen</button></div>':''}
+  </section>`;
+}
+
+function doneView(){
+  const t=totals(),top=Math.max(...t),w=S.players.filter((p,i)=>t[i]===top);
+  return `<section class="winner"><span class="sc">Ferdig spilt</span><div class="who">${w.map(esc).join(' og ')}<em>vant med ${top} poeng</em></div></section>`;
+}
+
+function logView(){
+  if(!S.rounds.length)return `<section><h2>Poengblokka</h2><p class="empty">Rundene føres her når de er lagret.</p></section>`;
+  const t=totals(),manual=S.settings.scoring==='manual',ro=MODE==='board';
+  return `<section><div class="head"><h2>Poengblokka</h2>${ro?(manual?'':'<span class="note">meldt / tatt</span>'):'<span class="note">Trykk en rad for å rette</span>'}</div>
+  <div class="pad"><table><thead><tr><th>Runde</th>${S.players.map(p=>`<th>${esc(p)}</th>`).join('')}</tr></thead>
+  <tbody>${S.rounds.map((r,ri)=>`<tr ${ro?'':`data-edit="${ri}" tabindex="0"`}><td><span class="rd">${ri+1}</span><span class="cd">${r.cards} kort</span></td>${r.e.map(e=>{
+    const hit=!manual&&e.b===e.t;return `<td class="${manual?'':hit?'hit':'miss'}">${e.p}${manual?'':`<span class="bt">${e.b}/${e.t}</span>`}</td>`}).join('')}</tr>`).join('')}</tbody>
+  <tfoot><tr><td>Sum</td>${t.map(v=>`<td>${v}</td>`).join('')}</tr></tfoot></table></div></section>`;
+}
+
+function footerView(){
+  if(S.confirmNew)return `<div class="confirm"><b>Slette dette spillet og starte på nytt?</b><p class="note">Spillerne og reglene beholdes. Neste spiller blir første giver.</p><div class="btns"><button class="btn line" data-act="cancelNew">Behold</button><button class="btn danger" data-act="reallyNew">Nytt spill</button></div></div>`;
+  return `<div class="links">${S.rounds.length&&S.editing===null?'<button class="link" data-act="undo">Angre siste runde</button>':''}<button class="link" data-act="newGame">Nytt spill</button></div>`;
 }
 
 // ---- shared scoreboard (ntfy.sh pub/sub, no accounts) ----
 function statusView(){
-  const t={idle:'Klar – sendes når du lagrer',wait:'Kobler til …',on:MODE==='board'?'Live':'Tavla er live',off:'Ikke tilkoblet'}[SYNC];
-  return `<span class="status ${SYNC}" role="status"><i></i>${t}</span>`;
+  const t={idle:'Sendes når du lagrer',wait:'Kobler til',on:MODE==='board'?'Live':'Tavla er oppdatert',off:'Ikke tilkoblet'}[SYNC];
+  return `<span class="status ${SYNC} ${MODE==='board'?'live':''}" role="status"><i></i>${t}</span>`;
 }
 function shareView(){
-  return `<section class="panel">
-    <div class="row" style="justify-content:space-between;flex-wrap:wrap"><h2>Tavle for de andre</h2>${statusView()}</div>
+  return `<section>
+    <div class="head"><h2>Tavla</h2>${statusView()}</div>
     ${showShare?`
-      <div class="qrbox" id="qr" aria-label="QR-kode til tavla"></div>
-      <div class="linkline"><code id="boardlink">${esc(BOARD_URL)}</code><button class="btn small" data-act="copy" id="copybtn">Kopier</button></div>
-      <p class="hint">Alle med lenken ser stillingen, runden og poengblokka, uten konto. Den oppdateres av seg selv når du lagrer en runde. Koden er den samme hele kvelden, også når dere starter nytt spill.</p>
-      <button class="btn ghost small" data-act="hideShare">Skjul QR-kode</button>`
-    :`<button class="btn ghost" data-act="showShare">Vis QR-kode og lenke</button>`}
-    ${SYNC==='off'?'<p class="hint">Fikk ikke sendt til tavla (sjekk nettet). Stillingen lagres fortsatt på denne telefonen, og sendes igjen neste gang du lagrer.</p>':''}
+      <div class="qr" id="qr" role="img" aria-label="QR-kode til tavla"></div>
+      <div class="linkline"><code id="boardlink">${esc(BOARD_URL)}</code><button class="btn" data-act="copy" id="copybtn">Kopier</button></div>
+      <p class="note">De andre ser stillingen, runden og poengblokka, uten konto. Samme kode hele kvelden, også når dere starter nytt spill.</p>
+      <div class="links"><button class="link" data-act="hideShare">Skjul koden</button></div>`
+    :`<p class="note">La de andre følge stillingen på sin egen telefon.</p><button class="btn line" data-act="showShare">Vis QR-kode</button>`}
+    ${SYNC==='off'?'<p class="note red">Fikk ikke sendt til tavla. Sjekk nettet – den prøver igjen neste gang du lagrer.</p>':''}
   </section>`;
 }
 function drawQR(){
   const el=document.getElementById('qr');if(!el)return;
-  if(typeof QRCode==='undefined'){el.outerHTML='<p class="hint">QR-koden lastet ikke. Kopier lenken i stedet.</p>';return}
-  try{new QRCode(el,{text:BOARD_URL,width:440,height:440,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M})}catch(e){}
+  if(typeof QRCode==='undefined'){el.outerHTML='<p class="note">QR-koden lastet ikke. Kopier lenken i stedet.</p>';return}
+  try{new QRCode(el,{text:BOARD_URL,width:432,height:432,colorDark:'#141414',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M})}catch(e){}
 }
 function boardView(){
-  const head=`<header><div><div class="suits" aria-hidden="true">♠♥♦♣</div><h1>Bondebridge-tavla</h1></div>${statusView()}</header>`;
+  const head=`<header><h1>Bondebridge<em>tavla</em></h1>${statusView()}</header>`;
   if(!REMOTE){
-    const msg=SYNC==='off'?'Får ikke kontakt med tavla. Sjekk nettet – den kobler seg til igjen av seg selv.'
-      :SYNC==='wait'?'Henter stillingen …':'Ingen stilling ennå. Den dukker opp her når føreren starter spillet.';
-    return head+`<section class="panel"><p style="margin:0">${msg}</p></section>`;
+    const msg=SYNC==='off'?'Får ikke kontakt. Sjekk nettet – den kobler seg til igjen av seg selv.'
+      :SYNC==='wait'?'Henter stillingen …':'Ingen stilling ennå. Den dukker opp når spillet starter.';
+    return head+`<p class="empty">${msg}</p>`;
   }
-  const t=totals(), order=t.map((v,i)=>i).sort((a,b)=>t[b]-t[a]), top=t[order[0]];
-  const sch=schedule(), n=REMOTE.now;
+  const {t,order}=standingsOrder(),top=t[order[0]],n=REMOTE.now,played=S.rounds.length>0;
   let now='';
   if(S.phase==='done')now=doneView();
   else if(S.phase==='play'&&n){
-    const bids=n.bids?`<div class="sum"><span>Meldt: ${n.bids.map((b,i)=>`${esc(S.players[i])} <b>${b}</b>`).join(' · ')}</span><span>${n.bids.reduce((a,b)=>a+b,0)} av ${n.cards}</span></div>`:'<p class="hint">Meldingene er ikke lagt inn ennå.</p>';
-    now=`<section class="panel"><div class="board-now"><div><div class="lbl">Runde ${n.round+1} av ${sch.length}</div><div class="cards">${n.cards}<small>kort hver</small></div></div><div class="lbl">Giver: ${esc(S.players[n.dealer]||'')}</div></div>${bids}</section>`;
+    const bids=n.bids?`<div class="bids">${n.bids.map((b,i)=>`<span>${esc(S.players[i])}<b>${b}</b></span>`).join('')}</div><div class="tally"><span>Meldt <b>${n.bids.reduce((a,b)=>a+b,0)}</b> av ${n.cards}</span></div>`
+      :'<p class="note">Venter på meldingene.</p>';
+    now=`<section><div class="round-top">${playCard(n.cards,n.round)}<div class="round-meta"><div><div class="sc">Runde ${n.round+1} av ${schedule().length}</div><div class="big">${n.cards} kort <em>· ${esc(S.players[n.dealer]||'')} gir</em></div></div>${course(n.round)}</div></div>${bids}</section>`;
   }
-  const list=`<section class="panel"><div class="row" style="justify-content:space-between"><h2>Stilling</h2><span class="lbl">${S.rounds.length} ${S.rounds.length===1?'runde':'runder'} spilt</span></div>
-    <div class="bigtable">${order.map((i,rank)=>{const lead=t[i]===top&&S.rounds.length>0;
-      const last=S.rounds.length?S.rounds[S.rounds.length-1].e[i].p:null;
-      return `<div class="brow ${lead?'first':''}"><span class="r">${rank+1}</span><span class="nm">${esc(S.players[i])}<span class="sub">${lead?'leder':(t[i]-top)+' bak'}${last!==null?` · sist ${last>0?'+':''}${last}`:''}</span></span><span class="tt">${t[i]}</span></div>`}).join('')}</div></section>`;
+  const list=`<section><div class="head"><h2>Stilling</h2><span class="sc">${S.rounds.length} ${S.rounds.length===1?'runde':'runder'}</span></div>
+    <div class="ranks">${order.map((i,rank)=>{const lead=played&&t[i]===top;
+      const last=played?S.rounds[S.rounds.length-1].e[i].p:null;
+      return `<div class="rank ${lead?'first':''}"><span class="r">${rank+1}</span><span class="nm">${esc(S.players[i])}<span class="sub">${!played?'&nbsp;':(lead?'leder':signed(t[i]-top)+' bak')+` · sist ${signed(last)}`}</span></span><span class="tt">${t[i]}</span></div>`}).join('')}</div></section>`;
   return head+now+list+logView();
 }
-// compact wire format keeps a full 20-round game well under ntfy's 4 KB message limit
+// compact wire format keeps a 20-round game well under ntfy's 4 KB message limit
 function encode(){
   const st=S.settings;
   const n=(S.phase==='play'&&S.draft&&S.editing===null)
     ?[S.rounds.length,S.draft.cards,dealerFor(S.rounds.length),(st.scoring!=='manual'&&S.draft.stage==='tricks')?S.draft.e.map(e=>e.b):0]:0;
-  return {v:1,p:S.players,s:[st.maxCards,st.order,st.scoring,st.firstDealer],ph:S.phase,
+  return {v:1,p:S.players,s:[st.maxCards,st.order,st.scoring,st.firstDealer,st.zeroFive?1:0],ph:S.phase,
     r:S.rounds.map(r=>[r.cards].concat(...r.e.map(e=>[e.b,e.t,e.p]))),n};
 }
 function decode(d){
   if(!d||d.v!==1||!Array.isArray(d.p))return null;
-  const k=d.p.length;
   const rounds=(d.r||[]).map(a=>({cards:a[0],e:d.p.map((_,i)=>({b:a[1+i*3],t:a[2+i*3],p:a[3+i*3]}))}));
-  return {players:d.p.map(String),settings:{maxCards:d.s[0],order:d.s[1],scoring:d.s[2],firstDealer:d.s[3],dealerBlock:false},
+  return {players:d.p.map(String),settings:{maxCards:d.s[0],order:d.s[1],scoring:d.s[2],firstDealer:d.s[3],zeroFive:!!d.s[4],dealerBlock:false},
     rounds,phase:d.ph,now:d.n?{round:d.n[0],cards:d.n[1],dealer:d.n[2],bids:d.n[3]||null}:null};
 }
 let lastPushed='',pushTimer=null,pushing=false;
-function schedulePush(){
-  if(MODE!=='keeper')return;
-  clearTimeout(pushTimer);pushTimer=setTimeout(push,700);
-}
+function schedulePush(){if(MODE!=='keeper')return;clearTimeout(pushTimer);pushTimer=setTimeout(push,700)}
 async function push(){
   if(pushing){schedulePush();return}
   if(S.phase==='setup')return; // the board keeps the last game until a new one starts
   const body=JSON.stringify(encode());
   if(body===lastPushed&&SYNC==='on')return;
   pushing=true;
-  try{
-    const r=await fetch(NTFY+TOPIC,{method:'POST',body});
-    if(!r.ok)throw new Error(r.status);
-    lastPushed=body;if(SYNC!=='on'){SYNC='on';render()}
-  }catch(e){if(SYNC!=='off'){SYNC='off';render()}}
+  try{const r=await fetch(NTFY+TOPIC,{method:'POST',body});if(!r.ok)throw new Error(r.status);
+    lastPushed=body;if(SYNC!=='on'){SYNC='on';render()}}
+  catch(e){if(SYNC!=='off'){SYNC='off';render()}}
   finally{pushing=false}
 }
 let es=null;
@@ -281,12 +432,10 @@ function listen(){
   es=new EventSource(NTFY+TOPIC+'/sse?since=latest');
   es.onopen=()=>{if(SYNC!=='on'){SYNC='on';render()}};
   es.onmessage=ev=>{
-    try{
-      const m=JSON.parse(ev.data);if(m.event&&m.event!=='message')return;
+    try{const m=JSON.parse(ev.data);if(m.event&&m.event!=='message')return;
       const g=decode(JSON.parse(m.message));if(!g)return;
       REMOTE=g;S={players:g.players,settings:g.settings,rounds:g.rounds,phase:g.phase,draft:null,editing:null};
-      SYNC='on';render();
-    }catch(e){}
+      SYNC='on';render();}catch(e){}
   };
   es.onerror=()=>{const s=es.readyState===2?'off':'wait';if(SYNC!==s){SYNC=s;render()}};
 }
@@ -296,111 +445,15 @@ function connect(){
   }else if(S.phase!=='setup')schedulePush();
 }
 
-function setupView(){
-  const n=S.players.filter(p=>p.trim()).length, cap=maxAllowed(n);
-  const mc=Math.min(S.settings.maxCards,cap);
-  const s=S.settings;
-  return `<header><div><div class="suits" aria-hidden="true">♠♥♦♣</div><h1>Bondebridge-blokka</h1></div></header>
-  <section class="panel">
-    <div class="row" style="justify-content:space-between"><h2>Spillere</h2><span class="lbl">${n} med</span></div>
-    ${S.players.map((p,i)=>`<div class="plrow"><input type="text" id="pl${i}" data-pl="${i}" value="${esc(p)}" placeholder="Navn" autocomplete="off"><button type="button" data-rm="${i}" aria-label="Fjern ${esc(p)}">×</button></div>`).join('')}
-    <button class="btn ghost" data-act="addp" ${S.players.length>=8?'disabled':''}>+ Legg til spiller</button>
-    <p class="hint">Rekkefølgen her er rekkefølgen rundt bordet. Giver går videre med klokka hver runde.</p>
-  </section>
-  <section class="panel">
-    <h2>Oppsett</h2>
-    <div class="grid2">
-      <div class="field"><label class="lbl" for="mc">Flest kort</label>
-        <select id="mc" data-set="maxCards">${Array.from({length:cap},(_,i)=>i+1).reverse().map(c=>`<option ${c===mc?'selected':''}>${c}</option>`).join('')}</select></div>
-      <div class="field"><label class="lbl" for="ord">Rekkefølge</label>
-        <select id="ord" data-set="order"><option value="down" ${s.order==='down'?'selected':''}>${mc} → 1 → ${mc}</option><option value="up" ${s.order==='up'?'selected':''}>1 → ${mc} → 1</option></select></div>
-      <div class="field"><label class="lbl" for="sc">Poeng</label>
-        <select id="sc" data-set="scoring">
-          <option value="ten" ${s.scoring==='ten'?'selected':''}>Klart: 10 + stikk · bom: 0</option>
-          <option value="minus" ${s.scoring==='minus'?'selected':''}>Klart: 10 + stikk · bom: −1 per stikk</option>
-          <option value="manual" ${s.scoring==='manual'?'selected':''}>Skriv inn poeng selv</option></select></div>
-      <div class="field"><label class="lbl" for="fd">Første giver</label>
-        <select id="fd" data-set="firstDealer">${S.players.map((p,i)=>`<option value="${i}" ${i===s.firstDealer?'selected':''}>${esc(p||'Spiller '+(i+1))}</option>`).join('')}</select></div>
-    </div>
-    <label class="row" style="gap:10px"><input type="checkbox" id="db" data-set="dealerBlock" ${s.dealerBlock?'checked':''} style="width:22px;height:22px"> <span>Giver kan ikke melde så summen går opp i antall kort</span></label>
-    <p class="hint">${mc*2} runder totalt. Med ${n||'?'} spillere er ${cap} kort maks (52 ÷ ${n||'?'}).</p>
-  </section>
-  <button class="btn" data-act="start" ${n<2?'disabled':''}>Start spill</button>`;
-}
-
-function standingsView(){
-  const t=totals(), order=t.map((v,i)=>i).sort((a,b)=>t[b]-t[a]), top=t[order[0]];
-  return `<div class="standings"><div class="st-list" aria-label="Stilling">${order.map((i,rank)=>{
-    const lead=t[i]===top&&S.rounds.length>0;
-    return `<div class="chip ${lead?'lead':''}"><span class="n">${rank+1}. ${esc(S.players[i])}</span><span class="t">${t[i]}</span><span class="d">${lead?'leder':(t[i]-top)}</span></div>`}).join('')}</div></div>`;
-}
-
-function roundView(){
-  const sch=schedule(), ri=S.editing!==null?S.editing:S.rounds.length;
-  const d=S.draft, cards=d.cards, dealer=dealerFor(ri), manual=S.settings.scoring==='manual';
-  const bidSum=d.e.reduce((a,e)=>a+e.b,0), trickSum=d.e.reduce((a,e)=>a+e.t,0);
-  let body='', sum='', action='';
-  const nameCell=(i,sub)=>`<div class="pname">${esc(S.players[i])}${i===dealer?'<span class="dealer">Giver</span>':''}${sub?`<span class="sub">${sub}</span>`:''}</div>`;
-  const seat=i=>(dealer+1+i)%S.players.length; // bidding order: left of dealer first
-  const idxs=S.players.map((_,i)=>seat(i));
-
-  if(manual){
-    body=idxs.map(i=>`<div class="prow">${nameCell(i)}<div class="step"><button type="button" data-step="m${i}" data-d="-1" aria-label="Minus">−</button><input type="number" id="m${i}" data-man="${i}" value="${d.e[i].m}" inputmode="numeric"><button type="button" data-step="m${i}" data-d="1" aria-label="Pluss">+</button></div></div>`).join('');
-    action=`<button class="btn" data-act="saveRound">${S.editing!==null?'Lagre endring':'Lagre runde'}</button>`;
-  } else if(d.stage==='bids'){
-    body=idxs.map(i=>`<div class="prow">${nameCell(i)}${stepper('b'+i,d.e[i].b,0,cards)}</div>`).join('');
-    const blocked=S.settings.dealerBlock&&bidSum===cards;
-    const cls=blocked?'bad':bidSum===cards?'warn':'';
-    const txt=bidSum>cards?`${bidSum-cards} for mye meldt – noen går bom`:bidSum<cards?`${cards-bidSum} stikk til overs – noen får flere enn meldt`:'Går akkurat opp';
-    sum=`<div class="sum ${cls}"><span>Meldt: <b>${bidSum}</b> av ${cards}</span><span>${blocked?'Giver må endre':txt}</span></div>`;
-    action=`<button class="btn" data-act="toTricks" ${blocked?'disabled':''}>Meldinger er satt → spill runden</button>`;
-  } else {
-    body=idxs.map(i=>{const e=d.e[i],p=score(e.b,e.t);
-      return `<div class="prow">${nameCell(i,`Meldte ${e.b} · <span class="pts ${e.b===e.t?'hit':'miss'}">${p>0?'+':''}${p}</span>`)}${stepper('t'+i,e.t,0,cards)}</div>`}).join('');
-    const ok=trickSum===cards;
-    sum=`<div class="sum ${ok?'ok':'bad'}"><span>Stikk: <b>${trickSum}</b> av ${cards}</span><span>${ok?'Stemmer':trickSum<cards?`Mangler ${cards-trickSum}`:`${trickSum-cards} for mange`}</span></div>`;
-    action=`<div class="row"><button class="btn ghost small" data-act="toBids">← Meldinger</button><button class="btn" data-act="saveRound" ${ok?'':'disabled'}>${S.editing!==null?'Lagre endring':'Lagre runde'}</button></div>`;
-  }
-  const stageLbl=manual?'Poeng':d.stage==='bids'?'Steg 1 · Meldinger':'Steg 2 · Stikk tatt';
-  return `<section class="panel" id="round">
-    <div class="roundhead"><div><div class="lbl">${S.editing!==null?'Redigerer runde':'Runde'} ${ri+1} av ${sch.length}</div><div class="cards">${cards}<small>kort hver</small></div></div><div class="lbl">${stageLbl}</div></div>
-    <div class="plist">${body}</div>${sum}${action}
-    ${S.editing!==null?'<button class="btn ghost small" data-act="cancelEdit">Avbryt redigering</button>':''}
-  </section>`;
-}
-
-function doneView(){
-  const t=totals(), top=Math.max(...t), w=S.players.filter((p,i)=>t[i]===top);
-  return `<section class="panel winner"><div class="suits" aria-hidden="true">♠♥♦♣</div><div class="lbl">Ferdig spilt</div><div class="big">${w.map(esc).join(' og ')}</div><p class="hint" style="margin:0">vant med ${top} poeng</p></section>`;
-}
-
-function logView(){
-  if(!S.rounds.length)return `<p class="hint">Rundene dukker opp her når de er lagret. Trykk på en runde for å rette den.</p>`;
-  const t=totals(), manual=S.settings.scoring==='manual', ro=MODE==='board';
-  return `<section style="display:flex;flex-direction:column;gap:8px"><div class="row" style="justify-content:space-between"><h2>Poengblokka</h2>${ro?'':'<span class="hint">Trykk rad for å rette</span>'}</div>
-  <div class="logwrap"><table><thead><tr><th>Rd · kort</th>${S.players.map(p=>`<th>${esc(p)}</th>`).join('')}</tr></thead>
-  <tbody>${S.rounds.map((r,ri)=>`<tr ${ro?'':`data-edit="${ri}" tabindex="0"`}><td>${ri+1} · ${r.cards}</td>${r.e.map(e=>{
-    const hit=!manual&&e.b===e.t;return `<td class="${manual?'':hit?'hit':'miss'}">${e.p}${manual?'':`<span class="bt">${e.b}/${e.t}</span>`}</td>`}).join('')}</tr>`).join('')}</tbody>
-  <tfoot><tr><td>Sum</td>${t.map(v=>`<td>${v}</td>`).join('')}</tr></tfoot></table></div>
-  ${manual?'':'<p class="hint">Små tall: meldt / tatt.</p>'}</section>`;
-}
-
-function footerView(){
-  return `<section class="panel">
-    ${S.confirmNew?`<div class="confirm"><b>Slette dette spillet og starte på nytt?</b><div class="row"><button class="btn ghost small" data-act="cancelNew">Nei, behold</button><button class="btn small" style="background:var(--red)" data-act="reallyNew">Ja, nytt spill</button></div></div>`
-    :`<div class="row">${S.rounds.length&&S.editing===null?'<button class="btn ghost small" data-act="undo">Angre siste runde</button>':''}<button class="btn ghost small" data-act="newGame">Nytt spill</button></div>`}
-    <p class="hint">Spillet lagres på denne telefonen, også om du lukker siden.</p></section>`;
-}
-
 // ---- events ----
 document.addEventListener('click',ev=>{
   if(MODE==='board')return;
-  const b=ev.target.closest('button,[data-edit]');if(!b)return;
+  const b=ev.target.closest('button,[data-edit]');if(!b||b.disabled)return;
   const a=b.dataset.act;
   if(a==='showShare'||a==='hideShare'){showShare=a==='showShare';render();return}
   if(a==='copy'){
     const done=()=>{const c=$('#copybtn');if(c)c.textContent='Kopiert'};
-    try{navigator.clipboard.writeText(BOARD_URL).then(done,()=>selectLink())}catch(e){selectLink()}
+    try{navigator.clipboard.writeText(BOARD_URL).then(done,selectLink)}catch(e){selectLink()}
     return;
   }
   if(b.dataset.rm!==undefined){S.players.splice(+b.dataset.rm,1);if(S.settings.firstDealer>=S.players.length)S.settings.firstDealer=0;return commit()}
@@ -414,58 +467,58 @@ document.addEventListener('click',ev=>{
   if(b.dataset.edit!==undefined&&S.phase!=='setup'){
     const ri=+b.dataset.edit,r=S.rounds[ri];
     S.stash=S.editing===null?S.draft:S.stash;
-    S.editing=ri;S.draft={cards:r.cards,stage:S.settings.scoring==='manual'?'tricks':'tricks',e:r.e.map(e=>({b:e.b,t:e.t,m:e.p}))};
-    if(S.phase==='done')S.phase='play';S.wasDone=S.rounds.length===schedule().length;
-    commit();$('#round')&&$('#round').scrollIntoView({behavior:'smooth',block:'start'});return;
+    S.editing=ri;S.draft={cards:r.cards,stage:'tricks',e:r.e.map(e=>({b:e.b,t:e.t,m:e.p}))};
+    if(S.phase==='done')S.phase='play';
+    commit();const rd=$('#round');rd&&rd.scrollIntoView({behavior:'smooth',block:'start'});return;
   }
   switch(a){
-    case 'addp':S.players.push('');commit();const l=document.querySelector(`#pl${S.players.length-1}`);l&&l.focus();break;
+    case 'addp':{S.players.push('');commit();const l=$(`#pl${S.players.length-1}`);l&&l.focus();break}
     case 'start':
       S.players=S.players.map(p=>p.trim()).filter(Boolean);
       S.settings.maxCards=Math.min(S.settings.maxCards,maxAllowed(S.players.length));
       if(S.settings.firstDealer>=S.players.length)S.settings.firstDealer=0;
-      S.rounds=[];S.phase='play';S.editing=null;S.draft=newDraft();commit();break;
+      S.rounds=[];S.phase='play';S.editing=null;S.draft=newDraft();commit();window.scrollTo({top:0});break;
     case 'toTricks':S.draft.stage='tricks';S.draft.e.forEach(e=>e.t=e.b);commit();break;
     case 'toBids':S.draft.stage='bids';commit();break;
     case 'saveRound':{
-      const manual=S.settings.scoring==='manual';
-      const r={cards:S.draft.cards,e:S.draft.e.map(e=>({b:e.b,t:e.t,p:score(e.b,e.t,e.m)}))};
-      if(S.editing!==null){S.rounds[S.editing]=r;S.editing=null;S.draft=S.stash||newDraft();S.stash=null;}
-      else{S.rounds.push(r);S.draft=null;}
+      const r={cards:S.draft.cards,e:S.draft.e.map(e=>({b:e.b,t:e.t,p:score(e.b,e.t,e.m,S.draft.cards)}))};
+      if(S.editing!==null){S.rounds[S.editing]=r;S.editing=null;S.draft=S.stash||null;S.stash=null}
+      else{S.rounds.push(r);S.draft=null}
       if(S.rounds.length>=schedule().length){S.phase='done';S.draft=null}
       else if(!S.draft)S.draft=newDraft();
       commit();window.scrollTo({top:0,behavior:'smooth'});break;}
-    case 'cancelEdit':S.editing=null;S.draft=S.stash||newDraft();S.stash=null;if(S.rounds.length>=schedule().length){S.phase='done';S.draft=null}commit();break;
+    case 'cancelEdit':S.editing=null;S.draft=S.stash||null;S.stash=null;
+      if(S.rounds.length>=schedule().length){S.phase='done';S.draft=null}else if(!S.draft)S.draft=newDraft();commit();break;
     case 'undo':S.rounds.pop();S.phase='play';S.draft=newDraft();commit();break;
     case 'newGame':S.confirmNew=true;commit();break;
     case 'cancelNew':S.confirmNew=false;commit();break;
-    case 'reallyNew':{const p=S.players,st=S.settings;S=JSON.parse(JSON.stringify(DEMO));S.players=p;S.settings=st;S.settings.firstDealer=(st.firstDealer+1)%Math.max(p.length,1);commit();break;}
+    case 'reallyNew':{const p=S.players,st=S.settings;S=JSON.parse(JSON.stringify(DEMO));S.players=p;S.settings=st;S.settings.firstDealer=(st.firstDealer+1)%Math.max(p.length,1);commit();window.scrollTo({top:0});break;}
   }
 });
 document.addEventListener('input',ev=>{
   const t=ev.target;
   if(t.dataset.pl!==undefined){S.players[+t.dataset.pl]=t.value;save();
-    const btn=document.querySelector('[data-act="start"]');if(btn)btn.disabled=S.players.filter(p=>p.trim()).length<2;return}
-  if(t.dataset.man!==undefined){S.draft.e[+t.dataset.man].m=parseInt(t.value,10)||0;save();return}
+    const btn=$('[data-act="start"]');if(btn)btn.disabled=S.players.filter(p=>p.trim()).length<2;return}
+  if(t.dataset.man!==undefined){S.draft.e[+t.dataset.man].m=parseInt(t.value,10)||0;save()}
 });
 document.addEventListener('change',ev=>{
+  if(MODE==='board')return;
   const t=ev.target,k=t.dataset.set;
   if(t.dataset.pl!==undefined){commit();return}
   if(!k)return;
-  if(k==='dealerBlock')S.settings[k]=t.checked;
+  if(t.type==='checkbox')S.settings[k]=t.checked;
   else if(k==='maxCards'||k==='firstDealer')S.settings[k]=+t.value;
   else S.settings[k]=t.value;
   commit();
 });
-document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target.dataset.edit!==undefined)ev.target.click()});
+document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target.dataset&&ev.target.dataset.edit!==undefined)ev.target.click()});
 
 function selectLink(){const el=$('#boardlink');if(!el)return;const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r)}
 function commit(){save();schedulePush();
   const f=document.activeElement&&document.activeElement.id;
   render();
-  if(f){const el=document.getElementById(f);el&&el.focus()}
+  if(f){const el=document.getElementById(f);el&&el.focus({preventScroll:true})}
 }
-// keep phone screen on during play
 async function wake(){try{if('wakeLock' in navigator&&(S.phase==='play'||MODE==='board'))await navigator.wakeLock.request('screen')}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')wake()});
 document.addEventListener('click',wake,{once:true});
