@@ -230,6 +230,22 @@ tfoot td.me{background:var(--wash)}
 .meter i{display:block;height:100%;background:var(--red)}
 .course.flat{height:10px}
 .course.flat span{height:100%}
+.games.small button{padding:10px 12px}
+.games.small b{font-size:1rem}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--ink)}
+@media (max-width:420px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{display:flex;flex-direction:column;gap:2px;padding:12px 10px 12px 0;border-bottom:1px solid var(--rule);min-width:0}
+.tile .v{font-family:var(--display);font-weight:700;font-size:1.9rem;line-height:1.05;letter-spacing:-.02em}
+.tile .note{font-size:.75rem}
+.h2h{display:flex;flex-direction:column;border-top:1px solid var(--rule)}
+.hrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rule);min-width:0}
+.hrow>span:first-child{min-width:0}
+.hrow .score{font-family:var(--display);font-size:1.25rem;white-space:nowrap}
+.hrow .score.up{color:var(--up)}.hrow .score.dn{color:var(--red)}
+.hrow .score small{font-family:var(--ui);font-size:.75rem;color:var(--ink-2)}
+.confirmrow{background:var(--wash);margin:0 -20px;padding-left:20px;padding-right:20px}
+.stbl td:first-child{font-weight:500}
+.stbl tr.me td{background:var(--wash);font-weight:600}
 .comment{gap:8px;padding:0 0 16px;margin-top:-12px;border-bottom:1px solid var(--rule)}
 .comment .cl{color:var(--ink)}
 .comment p{font-family:var(--display);font-weight:400;font-size:1.2rem;line-height:1.3;letter-spacing:-.01em;text-wrap:pretty}
@@ -556,6 +572,7 @@ function newDraft(){return G().newDraft()}
 function render(){
   const app=$('#app');
   if(MODE==='board'){app.innerHTML=boardView();return}
+  if(VIEW==='stats'){app.innerHTML=statsView();return}
   if(S.phase==='setup'){app.innerHTML=setupView()+shareView();drawQR();return}
   app.innerHTML=standingsView()+commentView()+(SEATING?seatingView():S.phase==='done'?doneView():roundView())+logView()+shareView()+footerView();
   drawQR();
@@ -566,7 +583,9 @@ function dealerOpt(){
 function setupView(){
   const g=G(),n=S.players.filter(p=>p.trim()).length;
   const sw=(key,val,title,sub)=>`<div class="opt sw"><label for="o-${key}">${title}${sub?`<small>${sub}</small>`:''}</label><span class="switch"><input type="checkbox" id="o-${key}" data-set="${key}" ${val?'checked':''}><i></i></span></div>`;
+  const nh=loadH().length;
   return `<header><h1>${g.name}<em>poengblokk</em></h1></header>
+  ${nh?`<div class="links"><button class="link" data-act="stats">Statistikk · ${nh} ${nh===1?'spill':'spill'}</button></div>`:''}
   <section>
     <div class="games" role="group" aria-label="Velg spill">${Object.entries(GAMES).map(([k,x])=>`<button type="button" data-game="${k}" aria-pressed="${S.game===k}"><b>${x.name}</b><small>${x.blurb}</small></button>`).join('')}</div>
   </section>
@@ -609,7 +628,7 @@ function roundView(){
 
 function doneView(){
   const {t,order}=standingsOrder(),top=t[order[0]],w=S.players.filter((p,i)=>t[i]===top);
-  return `<section class="winner"><span class="sc">Ferdig spilt</span><div class="who">${w.map(esc).join(' og ')}<em>vant med ${top} poeng</em></div></section>`;
+  return `<section class="winner"><span class="sc">Ferdig spilt</span><div class="who">${w.map(esc).join(' og ')}<em>vant med ${top} poeng</em></div>${MODE==='keeper'?'<p class="note">Spillet er lagret i statistikken.</p><button class="btn line" data-act="stats">Se statistikk</button>':''}</section>`;
 }
 
 function logView(){
@@ -645,7 +664,7 @@ function swapSeats(i,j){
 }
 function footerView(){
   if(S.confirmNew)return `<div class="confirm"><b>Slette dette spillet og starte på nytt?</b><p class="note">Spillerne og reglene beholdes. Neste spiller blir første giver. Du kan bytte spill i oppsettet.</p><div class="btns"><button class="btn line" data-act="cancelNew">Behold</button><button class="btn danger" data-act="reallyNew">Nytt spill</button></div></div>`;
-  return `<div class="links">${S.rounds.length&&S.editing===null?'<button class="link" data-act="undo">Angre siste runde</button>':''}${S.phase==='play'&&!SEATING?'<button class="link" data-act="seats">Endre plasser</button>':''}<button class="link" data-act="newGame">Nytt spill</button></div>`;
+  return `<div class="links">${S.rounds.length&&S.editing===null?'<button class="link" data-act="undo">Angre siste runde</button>':''}${S.phase==='play'&&!SEATING?'<button class="link" data-act="seats">Endre plasser</button>':''}<button class="link" data-act="newGame">Nytt spill</button><button class="link" data-act="stats">Statistikk</button></div>`;
 }
 
 // ---- shared scoreboard (ntfy.sh pub/sub, no accounts) ----
@@ -801,6 +820,108 @@ function connect(){
   }else if(S.phase!=='setup')schedulePush();
 }
 
+// ---- history + stats ----
+// Each finished game is one self-contained record with a stable id, so the list can later be
+// uploaded as-is to a shared database (one document per game) without changing the stats code.
+const HKEY=KEY+'-history',WHOKEY=KEY+'-who';
+const rid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function loadH(){try{const h=JSON.parse(localStorage.getItem(HKEY)||'[]');return Array.isArray(h)?h:[]}catch(e){return []}}
+function saveH(h){try{localStorage.setItem(HKEY,JSON.stringify(h))}catch(e){}}
+function recordGame(){
+  if(MODE!=='keeper'||!S.rounds.length)return;
+  if(!S.gid)S.gid=rid();
+  const t=totals(),h=loadH(),old=h.findIndex(x=>x.id===S.gid);
+  const rec={id:S.gid,game:S.game,date:old>=0?h[old].date:new Date().toISOString(),
+    players:S.players.slice(),settings:JSON.parse(JSON.stringify(S.game==='bb'?S.settings:S.sd)),
+    rounds:JSON.parse(JSON.stringify(S.rounds)),totals:t,ranks:ranksOf(t)};
+  if(old>=0)h[old]=rec;else h.push(rec);
+  saveH(h);
+}
+function unrecordGame(){if(!S.gid)return;saveH(loadH().filter(x=>x.id!==S.gid))}
+
+let VIEW='main',STATS_GAME=null,DEL_ID=null;
+let WHO=null;try{WHO=localStorage.getItem(WHOKEY)}catch(e){}
+const nkey=s=>String(s).trim().toLowerCase();
+
+function computeStats(gameKey){
+  const H=loadH().filter(x=>x.game===gameKey).sort((a,b)=>a.date<b.date?-1:1);
+  const P={},h2h={};
+  const get=name=>{const k=nkey(name);if(!P[k])P[k]={key:k,name,games:0,wins:0,placeSum:0,podium:0,best:null,worst:null,
+    rounds:0,pts:0,
+    bidRounds:0,hits:0,bidSum:0,zeroTry:0,zeroMade:0,maxMade:0,streak:0,
+    queens:0,hearts:0,clean:0,moons:0,jacks:0};
+    P[k].name=name;return P[k]};   // latest spelling wins
+  const lowWins=gameKey==='sd';
+  H.forEach(g=>{
+    const N=g.players.length;
+    g.players.forEach((name,i)=>{
+      const s=get(name),tot=g.totals[i],rk=g.ranks[i];
+      s.games++;s.placeSum+=rk;if(rk===1)s.wins++;if(rk<=3)s.podium++;
+      if(s.best===null||(lowWins?tot<s.best:tot>s.best))s.best=tot;
+      if(s.worst===null||(lowWins?tot>s.worst:tot<s.worst))s.worst=tot;
+      let run=0;
+      g.rounds.forEach(r=>{
+        const e=r.e[i];s.rounds++;s.pts+=e.p;
+        if(gameKey==='bb'&&g.settings.scoring!=='manual'){
+          s.bidRounds++;s.bidSum+=e.b;
+          if(e.b===e.t){s.hits++;run++;if(run>s.streak)s.streak=run;if(e.b>s.maxMade)s.maxMade=e.b}else run=0;
+          if(e.b===0){s.zeroTry++;if(e.t===0)s.zeroMade++}
+        }
+        if(gameKey==='sd'){
+          s.hearts+=e.h;if(r.q===i)s.queens++;if(r.moon===i)s.moons++;if(r.j===i)s.jacks++;if(e.p<=0)s.clean++;
+        }
+      });
+    });
+    // head to head: a finished ahead of b in this game
+    for(let a=0;a<N;a++)for(let b=0;b<N;b++){if(a===b)continue;
+      const ka=nkey(g.players[a]),kb=nkey(g.players[b]);
+      h2h[ka]=h2h[ka]||{};const c=h2h[ka][kb]=h2h[ka][kb]||{w:0,l:0,t:0,name:g.players[b]};c.name=g.players[b];
+      if(g.ranks[a]<g.ranks[b])c.w++;else if(g.ranks[a]>g.ranks[b])c.l++;else c.t++;
+    }
+  });
+  const list=Object.values(P).sort((a,b)=>b.wins-a.wins||(a.placeSum/a.games)-(b.placeSum/b.games)||b.games-a.games);
+  return {H,list,h2h};
+}
+const pct=(a,b)=>b?Math.round(a/b*100)+' %':'–';
+const avg=(a,b,d=1)=>b?(a/b).toFixed(d).replace('.',','):'–';
+function fmtDate(iso){try{return new Date(iso).toLocaleDateString('nb-NO',{day:'numeric',month:'short',year:'numeric'})}catch(e){return iso.slice(0,10)}}
+
+function statsView(){
+  const gk=STATS_GAME||S.game,g=GAMES[gk],{H,list,h2h}=computeStats(gk);
+  const all=loadH().length;
+  const tabs=`<div class="games small" role="group" aria-label="Velg spill">${Object.entries(GAMES).map(([k,x])=>`<button type="button" data-sgame="${k}" aria-pressed="${gk===k}"><b>${x.name}</b><small>${loadH().filter(h=>h.game===k).length} spill</small></button>`).join('')}</div>`;
+  const head=`<header><h1>Statistikk<em>lagret på denne telefonen</em></h1></header><div class="links"><button class="link" data-act="statsBack">← Tilbake til spillet</button></div>`;
+  if(!H.length)return head+`<section>${tabs}<p class="empty">${all?`Ingen ferdige spill i ${g.name} ennå.`:'Ingen ferdige spill ennå.'} Spill som føres til slutt på denne telefonen havner her av seg selv.</p></section>`;
+  const me=WHO&&list.find(s=>s.key===nkey(WHO));
+  const who=`<section><div class="head"><h2>Hvem er du?</h2><span class="note">Velg navnet ditt for å se dine tall</span></div>
+    <div class="chips">${list.map(s=>`<button type="button" class="chip ${me&&me.key===s.key?'on':''}" data-who="${esc(s.name)}" aria-pressed="${!!(me&&me.key===s.key)}">${esc(s.name)}</button>`).join('')}</div></section>`;
+  const extraHead=gk==='bb'?'Treff':'Damer';
+  const extra=s=>gk==='bb'?pct(s.hits,s.bidRounds):avg(s.queens,s.games);
+  const board=`<section><div class="head"><h2>Tabell</h2><span class="sc">${H.length} ${H.length===1?'spill':'spill'}</span></div>
+    <div class="pad"><table class="stbl"><thead><tr><th>Navn</th><th>Spill</th><th>Seire</th><th>Snittplass</th><th>${extraHead}</th></tr></thead>
+    <tbody>${list.map(s=>`<tr class="${me&&me.key===s.key?'me':''}"><td>${esc(s.name)}</td><td>${s.games}</td><td>${s.wins}</td><td>${avg(s.placeSum,s.games)}</td><td>${extra(s)}</td></tr>`).join('')}</tbody></table></div>
+    <p class="note">${gk==='bb'?'Treff er andelen runder der meldingen gikk inn.':'Damer er hvor mange ganger per spill man tok spar dame.'}</p></section>`;
+  let mine='';
+  if(me){
+    const s=me,tile=(l,v,sub)=>`<div class="tile"><span class="sc">${l}</span><span class="v">${v}</span>${sub?`<span class="note">${sub}</span>`:''}</div>`;
+    const common=[tile('Seire',s.wins,pct(s.wins,s.games)+' av spillene'),tile('Snittplass',avg(s.placeSum,s.games),`${s.podium} pallplasser`),
+      tile(gk==='sd'?'Laveste sum':'Beste sum',s.best,`dårligste ${s.worst}`)];
+    const spec=gk==='bb'?[tile('Treff',pct(s.hits,s.bidRounds),`${s.hits} av ${s.bidRounds} runder`),tile('Snitt meldt',avg(s.bidSum,s.bidRounds),'stikk per runde'),
+        tile('Nullmeldinger',`${s.zeroMade}/${s.zeroTry}`,'klart / forsøkt'),tile('Største klart',s.maxMade||'–','stikk meldt og tatt'),tile('Lengste rekke',s.streak,'treff på rad')]
+      :[tile('Spar dame',s.queens,pct(s.queens,s.rounds)+' av rundene'),tile('Hjerter',avg(s.hearts,s.rounds),'per runde'),tile('Rene runder',pct(s.clean,s.rounds),`${s.clean} uten poeng`),
+        tile('Månelandinger',s.moons,''),tile(+S.sd.jack||s.jacks?'Ruter knekt':'Poeng per runde',+S.sd.jack||s.jacks?s.jacks:avg(s.pts,s.rounds),'')];
+    const opp=Object.values(h2h[s.key]||{}).sort((a,b)=>(b.w+b.l+b.t)-(a.w+a.l+a.t));
+    mine=`<section><div class="head"><h2>${esc(s.name)}</h2><span class="sc">${s.games} spill</span></div><div class="tiles">${common.concat(spec).join('')}</div></section>
+    <section><div class="head"><h2>Innbyrdes</h2><span class="note">hvem endte foran hvem</span></div>
+      <div class="h2h">${opp.map(o=>`<div class="hrow"><span>mot ${esc(o.name)}</span><span class="score ${o.w>o.l?'up':o.w<o.l?'dn':''}"><b>${o.w}</b>–<b>${o.l}</b>${o.t?` <small>(${o.t} likt)</small>`:''}</span></div>`).join('')||'<p class="note">Ingen felles spill ennå.</p>'}</div></section>`;
+  }
+  const hist=`<section><div class="head"><h2>Spill</h2><span class="note">nyeste først</span></div><div class="h2h">${H.slice().reverse().map(x=>{
+    const w=x.players.filter((_,i)=>x.ranks[i]===1).map(esc).join(' og ');
+    return DEL_ID===x.id?`<div class="hrow confirmrow"><span>Slette spillet fra ${fmtDate(x.date)}?</span><span class="links"><button class="link" data-act="delNo">Behold</button><button class="link red" data-act="delYes">Slett</button></span></div>`
+      :`<div class="hrow"><span><b>${w}</b> vant<small class="note"> · ${fmtDate(x.date)} · ${x.players.length} spillere · ${x.rounds.length} runder</small></span><button type="button" class="link" data-del="${x.id}" aria-label="Slett spillet fra ${fmtDate(x.date)}">Slett</button></div>`}).join('')}</div></section>`;
+  return head+`<section>${tabs}</section>`+who+(mine||'')+board+hist;
+}
+
 // ---- events ----
 function toggleMe(name){
   ME=ME===name?null:name;
@@ -808,7 +929,7 @@ function toggleMe(name){
   render();
 }
 function afterSave(){
-  if(G().isOver()){S.phase='done';S.draft=null}
+  if(G().isOver()){S.phase='done';S.draft=null;recordGame()}
   else{S.phase='play';if(!S.draft)S.draft=newDraft()}
 }
 document.addEventListener('click',ev=>{
@@ -821,6 +942,9 @@ document.addEventListener('click',ev=>{
     try{navigator.clipboard.writeText(BOARD_URL).then(done,selectLink)}catch(e){selectLink()}
     return;
   }
+  if(b.dataset.sgame){STATS_GAME=b.dataset.sgame;DEL_ID=null;render();return}
+  if(b.dataset.who!==undefined){WHO=nkey(WHO||'')===nkey(b.dataset.who)?null:b.dataset.who;try{WHO===null?localStorage.removeItem(WHOKEY):localStorage.setItem(WHOKEY,WHO)}catch(e){}render();return}
+  if(b.dataset.del){DEL_ID=b.dataset.del;render();return}
   if(b.dataset.game){S.game=b.dataset.game;return commit()}
   if(b.dataset.card){G().pickCard(b.dataset.card,+b.dataset.i);return commit()}
   if(b.dataset.seat!==undefined){
@@ -852,7 +976,7 @@ document.addEventListener('click',ev=>{
       S.players=S.players.map(p=>p.trim()).filter(Boolean);
       G().onStart();
       if(S.settings.firstDealer>=S.players.length)S.settings.firstDealer=0;
-      S.rounds=[];S.phase='play';S.editing=null;S.draft=newDraft();commit();window.scrollTo({top:0});break;
+      S.rounds=[];S.phase='play';S.editing=null;S.gid=rid();S.draft=newDraft();commit();window.scrollTo({top:0});break;
     case 'toTricks':S.draft.stage='tricks';S.draft.e.forEach(e=>e.t=e.b);commit();break;
     case 'toBids':S.draft.stage='bids';commit();break;
     case 'saveRound':{
@@ -862,9 +986,13 @@ document.addEventListener('click',ev=>{
       afterSave();
       commit();window.scrollTo({top:0,behavior:'smooth'});break;}
     case 'cancelEdit':S.editing=null;S.draft=S.stash||null;S.stash=null;afterSave();commit();break;
-    case 'undo':S.rounds.pop();S.phase='play';S.draft=newDraft();commit();break;
+    case 'undo':if(S.phase==='done')unrecordGame();S.rounds.pop();S.phase='play';S.draft=newDraft();commit();break;
     case 'seats':SEATING=true;render();{const el=$('#seating');el&&el.scrollIntoView({behavior:'smooth',block:'start'})}break;
     case 'seatsDone':SEATING=false;render();window.scrollTo({top:0,behavior:'smooth'});break;
+    case 'stats':VIEW='stats';STATS_GAME=S.game;DEL_ID=null;render();window.scrollTo({top:0});break;
+    case 'statsBack':VIEW='main';DEL_ID=null;render();window.scrollTo({top:0});break;
+    case 'delYes':saveH(loadH().filter(x=>x.id!==DEL_ID));DEL_ID=null;render();break;
+    case 'delNo':DEL_ID=null;render();break;
     case 'newGame':S.confirmNew=true;commit();break;
     case 'cancelNew':S.confirmNew=false;commit();break;
     case 'reallyNew':{const keep={game:S.game,players:S.players,settings:S.settings,sd:S.sd};S=JSON.parse(JSON.stringify(DEMO));Object.assign(S,keep);S.settings.firstDealer=(keep.settings.firstDealer+1)%Math.max(keep.players.length,1);commit();window.scrollTo({top:0});break;}
