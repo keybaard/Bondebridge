@@ -123,6 +123,9 @@ header h1{min-width:0}
 .pname{min-width:0;font-weight:500;font-size:1.05rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pname .tag{font-size:.64rem;text-transform:uppercase;letter-spacing:.14em;color:var(--red);margin-left:8px;vertical-align:2px;font-weight:500}
 .pname .tag.soft{color:var(--ink-2)}
+.starts{font-size:.9rem;color:var(--ink-2);margin-top:4px}
+.starts span{color:var(--ink);font-weight:500}
+.starts span.me{text-decoration:underline;text-underline-offset:4px}
 .seatrow{grid-template-columns:1.6rem 1fr 44px 44px;padding:4px 0;border-bottom:1px solid var(--rule)}
 .sname{font-weight:500;padding:10px 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sname .tag{font-size:.64rem;text-transform:uppercase;letter-spacing:.14em;color:var(--red);margin-left:8px;vertical-align:2px;font-weight:500}
@@ -738,7 +741,7 @@ function boardView(){
   let now='';
   if(S.phase==='done')now=doneView();
   else if(S.phase==='play'&&n){
-    now=`<section><div class="round-top">${g.face(n.round,n.cards)}<div class="round-meta"><div><div class="sc">Runde ${n.round+1}${total?` av ${total}`:''}</div><div class="big">${g.headline(n.round,n.cards,n.dealer)}</div></div>${g.progress(n.round)}</div></div>${g.liveNow(n)}</section>`;
+    now=`<section><div class="round-top">${g.face(n.round,n.cards)}<div class="round-meta"><div><div class="sc">Runde ${n.round+1}${total?` av ${total}`:''}</div><div class="big">${g.headline(n.round,n.cards,n.dealer)}</div><div class="starts"><span class="${(n.dealer+1)%S.players.length===meIdx()?'me':''}">${esc(S.players[(n.dealer+1)%S.players.length]||'')}</span> starter</div></div>${g.progress(n.round)}</div></div>${g.liveNow(n)}</section>`;
   }
   const list=`<section><div class="head"><h2>Stilling</h2><span class="sc">${S.rounds.length} ${S.rounds.length===1?'runde':'runder'}${g.low?' · lavest vinner':''}</span></div>
     <div class="ranks">${order.map(i=>{const lead=played&&t[i]===top;
