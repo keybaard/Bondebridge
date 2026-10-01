@@ -122,6 +122,10 @@ header h1{min-width:0}
 .prow{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--rule)}
 .pname{min-width:0;font-weight:500;font-size:1.05rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pname .tag{font-size:.64rem;text-transform:uppercase;letter-spacing:.14em;color:var(--red);margin-left:8px;vertical-align:2px;font-weight:500}
+.pname .tag.soft{color:var(--ink-2)}
+.seatrow{grid-template-columns:1.6rem 1fr 44px 44px;padding:4px 0;border-bottom:1px solid var(--rule)}
+.sname{font-weight:500;padding:10px 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sname .tag{font-size:.64rem;text-transform:uppercase;letter-spacing:.14em;color:var(--red);margin-left:8px;vertical-align:2px;font-weight:500}
 .pname .sub{display:block;font-size:.8rem;font-weight:400;color:var(--ink-2)}
 .pname .sub b{font-weight:500;color:var(--ink)}
 .pname .sub .miss{color:var(--ink-2);font-weight:400;text-decoration:line-through;text-decoration-color:var(--red)}
@@ -550,7 +554,7 @@ function render(){
   const app=$('#app');
   if(MODE==='board'){app.innerHTML=boardView();return}
   if(S.phase==='setup'){app.innerHTML=setupView()+shareView();drawQR();return}
-  app.innerHTML=standingsView()+commentView()+(S.phase==='done'?doneView():roundView())+logView()+shareView()+footerView();
+  app.innerHTML=standingsView()+commentView()+(SEATING?seatingView():S.phase==='done'?doneView():roundView())+logView()+shareView()+footerView();
   drawQR();
 }
 function dealerOpt(){
@@ -586,8 +590,9 @@ function standingsView(){
 function roundView(){
   const g=G(),editing=S.editing!==null,ri=editing?S.editing:S.rounds.length;
   const d=S.draft,dealer=dealerFor(ri),total=g.totalRounds();
-  const order=S.players.map((_,i)=>(dealer+1+i)%S.players.length); // left of the dealer starts
-  const name=(i,sub)=>`<div class="pname">${esc(S.players[i])}${i===dealer?'<span class="tag">gir</span>':''}${sub?`<span class="sub">${sub}</span>`:''}</div>`;
+  const order=S.players.map((_,i)=>i);   // always the seating order, so nobody jumps around between rounds
+  const starter=(dealer+1)%S.players.length;   // left of the dealer starts
+  const name=(i,sub)=>`<div class="pname">${esc(S.players[i])}${i===dealer?'<span class="tag">gir</span>':''}${i===starter?'<span class="tag soft">starter</span>':''}${sub?`<span class="sub">${sub}</span>`:''}</div>`;
   const {rows,tally,action,stages}=g.entry(order,name,editing);
   return `<section id="round">
     <div class="round-top">${g.face(ri,d.cards)}
@@ -617,9 +622,27 @@ function logView(){
   <tfoot><tr><td>Sum</td>${cols.map(i=>`<td class="${mc(i)}">${t[i]}</td>`).join('')}</tr></tfoot></table></div></section>`;
 }
 
+let SEATING=false;
+function seatingView(){
+  const N=S.players.length,ri=S.editing!==null?S.editing:S.rounds.length,dealer=dealerFor(ri);
+  return `<section id="seating"><div class="head"><h2>Plasser rundt bordet</h2><span class="sc">med klokka</span></div>
+    <div class="players">${S.players.map((p,i)=>`<div class="plrow seatrow"><span class="seat">${i+1}</span><span class="sname">${esc(p)}${i===dealer?'<span class="tag">gir</span>':''}</span><button type="button" class="mv" data-seat="${i}" data-d="-1" aria-label="Flytt ${esc(p)} opp" ${i===0?'aria-disabled="true"':''}>↑</button><button type="button" class="mv" data-seat="${i}" data-d="1" aria-label="Flytt ${esc(p)} ned" ${i===N-1?'aria-disabled="true"':''}>↓</button></div>`).join('')}</div>
+    <p class="note">Poengene følger personen, og samme person gir fortsatt denne runden. Etterpå går giveren videre i den nye rekkefølgen.</p>
+    <button class="btn" data-act="seatsDone">Ferdig</button></section>`;
+}
+// swap two seats mid-game: every round, the draft and the card holders follow the person
+function swapSeats(i,j){
+  const N=S.players.length,ri=S.editing!==null?S.editing:S.rounds.length,dealer=dealerFor(ri);
+  const f=x=>x===i?j:x===j?i:x;
+  const fix=o=>{if(!o)return;if(Array.isArray(o.e)){const t=o.e[i];o.e[i]=o.e[j];o.e[j]=t}
+    ['q','j','a','moon'].forEach(k=>{if(typeof o[k]==='number'&&o[k]>=0)o[k]=f(o[k])})};
+  const P=S.players;[P[i],P[j]]=[P[j],P[i]];
+  S.rounds.forEach(fix);fix(S.draft);fix(S.stash);
+  S.settings.firstDealer=((f(dealer)-ri)%N+N)%N;
+}
 function footerView(){
   if(S.confirmNew)return `<div class="confirm"><b>Slette dette spillet og starte på nytt?</b><p class="note">Spillerne og reglene beholdes. Neste spiller blir første giver. Du kan bytte spill i oppsettet.</p><div class="btns"><button class="btn line" data-act="cancelNew">Behold</button><button class="btn danger" data-act="reallyNew">Nytt spill</button></div></div>`;
-  return `<div class="links">${S.rounds.length&&S.editing===null?'<button class="link" data-act="undo">Angre siste runde</button>':''}<button class="link" data-act="newGame">Nytt spill</button></div>`;
+  return `<div class="links">${S.rounds.length&&S.editing===null?'<button class="link" data-act="undo">Angre siste runde</button>':''}${S.phase==='play'&&!SEATING?'<button class="link" data-act="seats">Endre plasser</button>':''}<button class="link" data-act="newGame">Nytt spill</button></div>`;
 }
 
 // ---- shared scoreboard (ntfy.sh pub/sub, no accounts) ----
@@ -797,6 +820,11 @@ document.addEventListener('click',ev=>{
   }
   if(b.dataset.game){S.game=b.dataset.game;return commit()}
   if(b.dataset.card){G().pickCard(b.dataset.card,+b.dataset.i);return commit()}
+  if(b.dataset.seat!==undefined){
+    const i=+b.dataset.seat,j=i+(+b.dataset.d);if(j<0||j>=S.players.length)return;
+    swapSeats(i,j);commit();
+    const nb=document.querySelector(`[data-seat="${j}"][data-d="${b.dataset.d}"]`);nb&&nb.getAttribute('aria-disabled')!=='true'&&nb.focus({preventScroll:true});return;
+  }
   if(b.dataset.mv!==undefined){
     const i=+b.dataset.mv,j=i+(+b.dataset.d);if(j<0||j>=S.players.length)return;
     const P=S.players;[P[i],P[j]]=[P[j],P[i]];
@@ -832,6 +860,8 @@ document.addEventListener('click',ev=>{
       commit();window.scrollTo({top:0,behavior:'smooth'});break;}
     case 'cancelEdit':S.editing=null;S.draft=S.stash||null;S.stash=null;afterSave();commit();break;
     case 'undo':S.rounds.pop();S.phase='play';S.draft=newDraft();commit();break;
+    case 'seats':SEATING=true;render();{const el=$('#seating');el&&el.scrollIntoView({behavior:'smooth',block:'start'})}break;
+    case 'seatsDone':SEATING=false;render();window.scrollTo({top:0,behavior:'smooth'});break;
     case 'newGame':S.confirmNew=true;commit();break;
     case 'cancelNew':S.confirmNew=false;commit();break;
     case 'reallyNew':{const keep={game:S.game,players:S.players,settings:S.settings,sd:S.sd};S=JSON.parse(JSON.stringify(DEMO));Object.assign(S,keep);S.settings.firstDealer=(keep.settings.firstDealer+1)%Math.max(keep.players.length,1);commit();window.scrollTo({top:0});break;}
